@@ -83,7 +83,7 @@ export default function LoginPage() {
                 <p className="text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
               </div>
             </div>
-
+            <div id="root"></div>
             {/* Theme toggle */}
             <div className="inline-flex items-center gap-1 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 shadow-sm backdrop-blur px-1 py-1">
               <button onClick={() => setTheme("light")} className={`px-2.5 py-1.5 rounded-xl text-xs font-medium ${theme === "light" ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-300"}`}>Light</button>
