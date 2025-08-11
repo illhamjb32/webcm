@@ -1,6 +1,6 @@
 {
   "name": "webcm",
-  "homepage": "https://illhamjb32.github.io/webcm",
+  "homepage": "https://illhamjb32.github.io/webcm/",
   "private": false,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "npm run build",
+    "predeploy": "vite build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
