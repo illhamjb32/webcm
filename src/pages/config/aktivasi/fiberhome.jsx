@@ -15,7 +15,10 @@ export default function FiberhomeAktivasi() {
     const saved = localStorage.getItem("cm-theme");
     if (saved === "light" || saved === "dark") setTheme(saved);
   }, []);
-  const isSystemDark = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isSystemDark = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolvedDark = theme === "dark" || (theme === "system" && isSystemDark());
 
   // Inputs (Frame default 1, + Type ONT)
@@ -77,18 +80,26 @@ export default function FiberhomeAktivasi() {
   // Helpers
   const FSP = `${frame}/${slot}/${port}`;
 
+  // Normalisasi SN: kalau diawali "FHTT", pertahankan "FHTT" dan sisanya lowercase
+  function normalizeSn(input) {
+    const raw = (input || "").trim().replace(/\s+/g, "");
+    return /^fhtt/i.test(raw) ? "FHTT" + raw.slice(4).toLowerCase() : raw;
+  }
+
   // Generate
   function showConfig() {
     const needsFull = mode === MODES.V2 || mode === MODES.V1 || mode === MODES.REDAMAN || mode === MODES.CEK_IP || mode === MODES.HAPUS;
     if (needsFull && !requireAll()) return;
 
+    const snSafe = normalizeSn(sn);
+
     if (oltType === TYPES.AN6000) {
       if (mode === MODES.V2) {
         const tpl = [
           "config",
-          `whitelist add phy-id ${sn} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
+          `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
           `interface pon ${FSP}`,
-          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
           `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
           `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
           `onu remote-manage-cfg ${ontId} tr069 enable acs-url http://10.14.4.250:10301 acl-user icon acl-pswd 1c0nPlus!BNG2019`,
@@ -102,10 +113,11 @@ export default function FiberhomeAktivasi() {
       if (mode === MODES.V1) {
         const tpl = [
           "config",
-          `whitelist add phy-id ${sn} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
+          `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
           `interface pon ${FSP}`,
-          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
           `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
           "quit",
           "save",
         ].join("\n\n");
@@ -141,9 +153,9 @@ export default function FiberhomeAktivasi() {
       if (mode === MODES.V2) {
         const tpl = [
           "cd onu",
-          `set whitelist phy_addr address ${sn} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
+          `set whitelist phy_addr address ${snSafe} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
           "cd lan",
-          `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password}  0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password}  0 auto entries 4 fe1 fe2 ssid1 ssid5`,
           `set wancfg slot ${slot} ${port} ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
           `set wancfg slot ${slot} ${port} ${ontId} index 2 mode tr069 type route 2989 cos nat disable qos disable dsp dhcp`,
           `apply wancfg slot ${slot} ${port} ${ontId}`,
@@ -164,10 +176,10 @@ export default function FiberhomeAktivasi() {
           "",
           "show discovery slot all pon all",
           `show whitelist phy-sn slot ${slot} pon ${port}`,
-          `set whitelist phy_addr address ${sn} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
+          `set whitelist phy_addr address ${snSafe} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
           "",
           "cd lan",
-          `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password} 0 auto entries 3 fe1 fe2 ssid1`,
+          `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 3 fe1 fe2 ssid1`,
           `set wancfg slot ${slot} ${port} ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
           `apply wancfg slot ${slot} ${port} ${ontId}`,
           "",
@@ -180,7 +192,7 @@ export default function FiberhomeAktivasi() {
       }
 
       if (mode === MODES.REDAMAN) {
-        setOutput(`show onu opticalpower-info phy-id ${sn}`);
+        setOutput(`show onu opticalpower-info phy-id ${snSafe}`);
         return;
       }
 
@@ -219,7 +231,14 @@ export default function FiberhomeAktivasi() {
           <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
             <h2 className="text-sm font-semibold mb-4 text-slate-700 dark:text-slate-200">Input Data</h2>
 
-            <Field label="SN ONT" value={sn} onChange={setSn} name="sn" error={errors.sn} placeholder="e.g. FHTT1234ABCD" />
+            <Field
+              label="SN ONT"
+              value={sn}
+              onChange={(val) => setSn(normalizeSn(val))}
+              name="sn"
+              error={errors.sn}
+              placeholder="contoh: FHTTC06C8432 → FHTTc06c8432"
+            />
             <div className="grid grid-cols-3 gap-2">
               <Field label="Frame" value={frame} onChange={setFrame} name="frame" error={errors.frame} placeholder="1" />
               <Field label="Slot" value={slot} onChange={setSlot} name="slot" error={errors.slot} placeholder="0" />
@@ -280,7 +299,13 @@ function Field({ label, value, onChange, name, error, placeholder }) {
   return (
     <div className="mb-3">
       <label htmlFor={name} className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</label>
-      <input id={name} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950/60 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+      <input
+        id={name}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950/60 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+      />
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );

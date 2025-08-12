@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
@@ -7,8 +7,8 @@ export default function Dashboard() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openConfig, setOpenConfig] = useState(false);
 
-  // THEME (class-based)
-  const [theme, setTheme] = useState("system"); // "light" | "dark" | "system"
+  // THEME
+  const [theme, setTheme] = useState("system");
   useEffect(() => {
     const saved = localStorage.getItem("login-theme");
     if (saved === "light" || saved === "dark") setTheme(saved);
@@ -20,7 +20,7 @@ export default function Dashboard() {
     else localStorage.setItem("login-theme", theme);
   }, [theme]);
 
-  // Route guard (demo-only)
+  // Route guard
   useEffect(() => {
     if (!sessionStorage.getItem("auth")) navigate("/");
   }, [navigate]);
@@ -28,12 +28,62 @@ export default function Dashboard() {
   const navItems = [
     { to: "/dashboard", label: "Home" },
     { to: "/dashboard/flow-kerja", label: "Flow Kerja" },
-    // Config handled as dropdown
     { to: "/dashboard/link-kerja", label: "Link Kerja" },
     { to: "/dashboard/tools", label: "Tools" },
   ];
-
   const vendors = ["Huawei", "Raisecom", "BDCOM", "ZTE", "Fiberhome", "Viberlink"];
+
+  // ===== Clock (WIB) =====
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const { tanggalStr, waktuStr } = useMemo(() => {
+    const d = new Date(now);
+    const tanggal = d.toLocaleDateString("id-ID", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      timeZone: "Asia/Jakarta",
+    });
+    const waktu = d.toLocaleTimeString("id-ID", {
+      hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit",
+      timeZone: "Asia/Jakarta",
+    });
+    return { tanggalStr: tanggal, waktuStr: `${waktu} WIB` };
+  }, [now]);
+
+  // ===== Quick Links dari riwayat global (top 3: terbaru → terbanyak) =====
+  const [quickLinks, setQuickLinks] = useState([]);
+  function labelForPath(p) {
+    if (p === "/dashboard") return "Home";
+    if (p === "/dashboard/flow-kerja") return "Flow Kerja";
+    if (p === "/dashboard/link-kerja") return "Link Kerja";
+    if (p === "/dashboard/tools") return "Tools";
+    if (p.startsWith("/dashboard/config/aktivasi/")) {
+      const vendor = p.split("/").pop() || "";
+      return `Aktivasi · ${vendor.charAt(0).toUpperCase() + vendor.slice(1)}`;
+    }
+    return p;
+  }
+  function computeTop3() {
+    try {
+      const data = JSON.parse(localStorage.getItem("cm-usage") || "{}");
+      return Object.entries(data)
+        .sort((a, b) => (b[1].lastAt - a[1].lastAt) || (b[1].count - a[1].count))
+        .slice(0, 3)
+        .map(([path]) => ({ to: path, label: labelForPath(path) }));
+    } catch { return []; }
+  }
+  // refresh saat Dashboard mount & setiap kali kembali ke /dashboard
+  useEffect(() => {
+    setQuickLinks(computeTop3());
+  }, [location.pathname]);
+
+  const fallbackQuick = [
+    { to: "/dashboard/flow-kerja", label: "Flow Kerja" },
+    { to: "/dashboard/config/aktivasi/huawei", label: "Aktivasi · Huawei" },
+    { to: "/dashboard/tools", label: "Tools" },
+  ];
 
   return (
     <div className={resolvedDark ? "dark" : ""}>
@@ -68,7 +118,7 @@ export default function Dashboard() {
                   </li>
                 ))}
 
-                {/* CONFIG DROPDOWN: Aktivasi only */}
+                {/* CONFIG DROPDOWN */}
                 <li className="relative">
                   <button
                     onClick={() => setOpenConfig((v) => !v)}
@@ -100,24 +150,19 @@ export default function Dashboard() {
 
               {/* Right side */}
               <div className="flex items-center gap-2">
-                {/* Theme toggle */}
                 <div className="hidden sm:inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 px-1 py-1">
-                  <button onClick={() => setTheme("light")} className={`px-2 py-1 rounded-lg text-xs font-medium ${theme === "light" ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-300"}`}>Light</button>
+                  <button onClick={() => setTheme("light")}  className={`px-2 py-1 rounded-lg text-xs font-medium ${theme === "light"  ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-300"}`}>Light</button>
                   <button onClick={() => setTheme("system")} className={`px-2 py-1 rounded-lg text-xs font-medium ${theme === "system" ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-300"}`}>System</button>
-                  <button onClick={() => setTheme("dark")} className={`px-2 py-1 rounded-lg text-xs font-medium ${theme === "dark" ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-300"}`}>Dark</button>
+                  <button onClick={() => setTheme("dark")}   className={`px-2 py-1 rounded-lg text-xs font-medium ${theme === "dark"   ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-300"}`}>Dark</button>
                 </div>
 
                 <button
-                  onClick={() => {
-                    sessionStorage.removeItem("auth");
-                    navigate("/");
-                  }}
+                  onClick={() => { sessionStorage.removeItem("auth"); navigate("/"); }}
                   className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Logout
                 </button>
 
-                {/* Mobile menu button */}
                 <button
                   className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800"
                   onClick={() => setMobileOpen((v) => !v)}
@@ -153,7 +198,6 @@ export default function Dashboard() {
                   </li>
                 ))}
 
-                {/* Mobile: Config · Aktivasi only */}
                 <li className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Config · Aktivasi</li>
                 {vendors.map((v) => (
                   <li key={`a-${v}`}>
@@ -169,10 +213,7 @@ export default function Dashboard() {
 
                 <li>
                   <button
-                    onClick={() => {
-                      sessionStorage.removeItem("auth");
-                      navigate("/");
-                    }}
+                    onClick={() => { sessionStorage.removeItem("auth"); navigate("/"); }}
                     className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     Logout
@@ -189,23 +230,29 @@ export default function Dashboard() {
 
           {location.pathname === "/dashboard" && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Status: tanggal & jam realtime */}
               <Card title="Status">
                 <ul className="text-sm space-y-2">
-                  <li className="flex items-center justify-between"><span>Services</span><span className="font-medium text-blue-700 dark:text-blue-400">OK</span></li>
-                  <li className="flex items-center justify-between"><span>Jobs</span><span className="font-medium">12</span></li>
-                  <li className="flex items-center justify-between"><span>Alerts</span><span className="font-medium">0</span></li>
+                  <li className="flex items-center justify-between"><span>Tanggal</span><span className="font-medium">{tanggalStr}</span></li>
+                  <li className="flex items-center justify-between"><span>Waktu</span><span className="font-medium">{waktuStr}</span></li>
                 </ul>
               </Card>
+
+              {/* Links Cepat: dari history (top 3) */}
               <Card title="Links Cepat">
                 <div className="text-sm space-y-2">
-                  <DashLink to="/dashboard/flow-kerja">Flow Kerja</DashLink>
-                  <DashLink to="/dashboard/config/aktivasi/huawei">Aktivasi · Huawei</DashLink>
-                  <DashLink to="/dashboard/tools">Tools</DashLink>
+                  {(quickLinks.length ? quickLinks : fallbackQuick).map((it) => (
+                    <DashLink key={it.to} to={it.to}>{it.label}</DashLink>
+                  ))}
                 </div>
               </Card>
+
+              {/* Catatan: bullet points */}
               <Card title="Catatan">
-                <p className="text-sm text-slate-600 dark:text-slate-300">Website masih beta, beberapa menu/fungsi mungkin belum bekerja penuh. Akan ditambahkan segera...</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300"><b>Demi membantu kelancaran ACS untuk aktivasi sekarang memakai V2 dengan VLAN ACS.</b></p>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                  <li>Website masih beta; beberapa menu/fungsi mungkin belum bekerja penuh.</li>
+                  <li><b>Aktivasi disarankan memakai V2 dengan VLAN ACS</b> untuk kelancaran ACS.</li>
+                </ul>
               </Card>
             </div>
           )}
@@ -224,7 +271,7 @@ function PageHeader({ location }) {
   if (parts[1] === "link-kerja") title = "Link Kerja";
   if (parts[1] === "tools") title = "Tools";
   if (parts[1] === "config") {
-    const type = parts[2]; // aktivasi only
+    const type = parts[2];
     const vendor = parts[3] ? parts[3].toUpperCase() : "";
     if (type === "aktivasi") title = `Config · Aktivasi ${vendor && "· " + vendor}`;
     if (!type) title = "Config";
@@ -236,10 +283,7 @@ function PageHeader({ location }) {
         <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">CM Dashboard</p>
       </div>
-      <div className="flex items-center gap-2">
-        <button className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 shadow-sm">New</button>
-        <button className="rounded-xl border border-slate-200 dark:border-slate-800 text-sm px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">Export</button>
-      </div>
+      {/* tombol New & Export dihilangkan */}
     </div>
   );
 }
@@ -264,10 +308,7 @@ function Card({ title, children }) {
 
 function DashLink({ to, children }) {
   return (
-    <Link
-      to={to}
-      className="block rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-    >
+    <Link to={to} className="block rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
       {children}
     </Link>
   );
