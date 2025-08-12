@@ -13,8 +13,7 @@ import HuaweiAktivasi from "./pages/config/aktivasi/huawei";
 import RaisecomAktivasi from "./pages/config/aktivasi/raisecom";
 import BDCOMAktivasi from "./pages/config/aktivasi/bdcom";
 import ZTEAktivasi from "./pages/config/aktivasi/zte";
-// Jika halaman Fiberhome sudah ada, un-comment baris di bawah:
-// import FiberhomeAktivasi from "./pages/config/aktivasi/Fiberhome";
+import FiberhomeAktivasi from "./pages/config/aktivasi/fiberhome";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -31,6 +30,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/dashboard/config/aktivasi/raisecom" element={<RaisecomAktivasi />} />
         <Route path="/dashboard/config/aktivasi/bdcom" element={<BDCOMAktivasi />} />
         <Route path="/dashboard/config/aktivasi/zte" element={<ZTEAktivasi />} />
+        <Route path="/dashboard/config/aktivasi/fiberhome" element={<FiberhomeAktivasi />} />
         {/* <Route path="/dashboard/config/aktivasi/fiberhome" element={<FiberhomeAktivasi />} /> */}
       </Routes>
     </HashRouter>

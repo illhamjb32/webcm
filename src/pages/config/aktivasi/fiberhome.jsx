@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function BDCOMAktivasi() {
+export default function FiberhomeAktivasi() {
   const navigate = useNavigate();
 
   // Route guard
@@ -18,11 +18,13 @@ export default function BDCOMAktivasi() {
   const isSystemDark = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolvedDark = theme === "dark" || (theme === "system" && isSystemDark());
 
-  // Inputs (no Frame, no Line Profile)
+  // Inputs (Frame default 1, + Type ONT)
   const [sn, setSn] = useState("");
+  const [frame, setFrame] = useState("1"); // langsung diisi 1
   const [slot, setSlot] = useState("");
   const [port, setPort] = useState("");
   const [ontId, setOntId] = useState("");
+  const [typeOnt, setTypeOnt] = useState("");
   const [sid, setSid] = useState("");
   const [nama, setNama] = useState("");
   const [vlan, setVlan] = useState("");
@@ -38,18 +40,22 @@ export default function BDCOMAktivasi() {
   const [password, setPassword] = useState("");
   useEffect(() => { if (!password) setPassword(todayDefault); }, [todayDefault, password]);
 
-  // Modes (no V2 ACS)
-  const MODES = { V1: "v1", CEK_IP: "cekip", REDAMAN: "cekredaman", HAPUS: "hapus" };
-  const [mode, setMode] = useState(MODES.V1);
+  // Modes + OLT types
+  const MODES = { V2: "v2acs", V1: "v1", CEK_IP: "cekip", REDAMAN: "cekredaman", HAPUS: "hapus" };
+  const [mode, setMode] = useState(MODES.V2);
+  const TYPES = { AN6000: "an6000", AN5116: "an5116" };
+  const [oltType, setOltType] = useState(TYPES.AN6000);
 
   // Validation
   const [errors, setErrors] = useState({});
   function requireAll() {
     const e = {};
     if (!sn) e.sn = "SN ONT wajib diisi";
+    if (!frame) e.frame = "Frame wajib diisi";
     if (!slot) e.slot = "Slot wajib diisi";
     if (!port) e.port = "Port wajib diisi";
     if (!ontId) e.ontId = "ONT ID wajib diisi";
+    if (!typeOnt) e.typeOnt = "Type ONT wajib diisi";
     if (!sid) e.sid = "SID wajib diisi";
     if (!nama) e.nama = "Nama User wajib diisi";
     if (!password) e.password = "Password wajib diisi";
@@ -58,7 +64,7 @@ export default function BDCOMAktivasi() {
     return Object.keys(e).length === 0;
   }
 
-  // Output & copy
+  // Output + copy
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
   async function copyConfig() {
@@ -68,32 +74,130 @@ export default function BDCOMAktivasi() {
     } catch {}
   }
 
-  // Build strings
+  // Helpers
+  const FSP = `${frame}/${slot}/${port}`;
+
+  // Generate
   function showConfig() {
-    const needsFull = mode === MODES.V1 || mode === MODES.REDAMAN || mode === MODES.CEK_IP;
+    const needsFull = mode === MODES.V2 || mode === MODES.V1 || mode === MODES.REDAMAN || mode === MODES.CEK_IP || mode === MODES.HAPUS;
     if (needsFull && !requireAll()) return;
 
-    const SloPorOnt = `${slot}/${port}:${ontId}`; // gpON SLO/POR:ONT
+    if (oltType === TYPES.AN6000) {
+      if (mode === MODES.V2) {
+        const tpl = [
+          "config",
+          `whitelist add phy-id ${sn} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
+          `interface pon ${FSP}`,
+          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
+          `onu remote-manage-cfg ${ontId} tr069 enable acs-url http://10.14.4.250:10301 acl-user icon acl-pswd 1c0nPlus!BNG2019`,
+          "quit",
+          "save",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
 
-    if (mode === MODES.V1) {
-      const tpl = `Config\n\ninterface gpON ${SloPorOnt}\n\ndescription ${sid}-${nama}\n\nquit\n\ninterface gpON ${SloPorOnt}\n\ngpon onu wan 1 admin-status enable\n\ngpon onu wan 1 nat enable\n\ngpon onu wan 1 service-type internet\n\ngpon onu wan 1 connection-type pppoe\n\ngpon onu wan 1 pppoe username ${sn} HEXA  password ${password}\n\ngpon onu wan 1 tci vlan ${vlan}\n\ngpon onu wan 1 bind lan1 lan2 ssid1\n\ngpon onu wan 1 auto-get-dns-address enable\n\ngpon onu wan 1 lan-dhcp enable\n\nquit\n\nwrite all`;
-      setOutput(tpl);
-      return;
+      if (mode === MODES.V1) {
+        const tpl = [
+          "config",
+          `whitelist add phy-id ${sn} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
+          `interface pon ${FSP}`,
+          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          "quit",
+          "save",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (mode === MODES.REDAMAN) {
+        const tpl = [
+          `interface pon ${FSP}`,
+          `show onu optical-info ${ontId}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (mode === MODES.CEK_IP) {
+        const tpl = [
+          `interface pon ${FSP}`,
+          `show onu ${ontId} wan-info`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (mode === MODES.HAPUS) {
+        setOutput(`no whitelist slot ${slot} pon ${port} onu ${ontId}`);
+        return;
+      }
     }
 
-    if (mode === MODES.REDAMAN) {
-      setOutput(`show gpon interface gpON ${SloPorOnt} onu optical-transceiver-diagnosis`);
-      return;
-    }
+    if (oltType === TYPES.AN5116) {
+      if (mode === MODES.V2) {
+        const tpl = [
+          "cd onu",
+          `set whitelist phy_addr address ${sn} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
+          "cd lan",
+          `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password}  0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `set wancfg slot ${slot} ${port} ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `set wancfg slot ${slot} ${port} ${ontId} index 2 mode tr069 type route 2989 cos nat disable qos disable dsp dhcp`,
+          `apply wancfg slot ${slot} ${port} ${ontId}`,
+          "cd /",
+          "",
+          "cd onu",
+          `set remote_manage_cfg slot ${slot} pon ${port} onu ${ontId} tr069 enable acs_url http://10.14.4.250:10301  acl_user icon acl_pswd 1c0nPlus!BNG2019`,
+          "",
+          "save",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
 
-    if (mode === MODES.CEK_IP) {
-      setOutput(`show gpon interface gpON ${SloPorOnt} onu wan 1 config`);
-      return;
-    }
+      if (mode === MODES.V1) {
+        const tpl = [
+          "cd onu",
+          "",
+          "show discovery slot all pon all",
+          `show whitelist phy-sn slot ${slot} pon ${port}`,
+          `set whitelist phy_addr address ${sn} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
+          "",
+          "cd lan",
+          `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${sn} ${password} 0 auto entries 3 fe1 fe2 ssid1`,
+          `set wancfg slot ${slot} ${port} ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `apply wancfg slot ${slot} ${port} ${ontId}`,
+          "",
+          "cd /",
+          "",
+          "save",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
 
-    if (mode === MODES.HAPUS) {
-      setOutput(`coming soon`);
-      return;
+      if (mode === MODES.REDAMAN) {
+        setOutput(`show onu opticalpower-info phy-id ${sn}`);
+        return;
+      }
+
+      if (mode === MODES.CEK_IP) {
+        const tpl = [
+          "cd onu",
+          `show wan_info slot ${slot} pon ${port} on ${ontId}`,
+          "cd /",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (mode === MODES.HAPUS) {
+        setOutput(`no whitelist slot ${slot} pon ${port} onu ${ontId}`);
+        return;
+      }
     }
   }
 
@@ -102,25 +206,27 @@ export default function BDCOMAktivasi() {
       <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-4 sm:p-6">
         {/* Header */}
         <div className="mx-auto max-w-7xl flex items-center justify-between mb-6">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Config · Aktivasi · BDCOM</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Config · Aktivasi · Fiberhome</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} setTheme={setTheme} />
             <button className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => navigate(-1)}>Kembali</button>
           </div>
         </div>
 
-        {/* 3 Columns */}
+        {/* Grid */}
         <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Card 1: Input */}
           <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
             <h2 className="text-sm font-semibold mb-4 text-slate-700 dark:text-slate-200">Input Data</h2>
 
-            <Field label="SN ONT" value={sn} onChange={setSn} name="sn" error={errors.sn} placeholder="e.g. 5A544547D1A1189A" />
-            <div className="grid grid-cols-2 gap-2">
+            <Field label="SN ONT" value={sn} onChange={setSn} name="sn" error={errors.sn} placeholder="e.g. FHTT1234ABCD" />
+            <div className="grid grid-cols-3 gap-2">
+              <Field label="Frame" value={frame} onChange={setFrame} name="frame" error={errors.frame} placeholder="1" />
               <Field label="Slot" value={slot} onChange={setSlot} name="slot" error={errors.slot} placeholder="0" />
               <Field label="Port" value={port} onChange={setPort} name="port" error={errors.port} placeholder="0" />
             </div>
             <Field label="ONT ID" value={ontId} onChange={setOntId} name="ontId" error={errors.ontId} placeholder="1" />
+            <Field label="Type ONT" value={typeOnt} onChange={setTypeOnt} name="typeOnt" error={errors.typeOnt} placeholder="contoh: HG6243C" />
             <Field label="SID" value={sid} onChange={setSid} name="sid" error={errors.sid} placeholder="123456789" />
             <Field label="Nama User" value={nama} onChange={(val) => setNama(val.replace(/\s+/g, "."))} name="nama" error={errors.nama} placeholder="Nama.Pelanggan" />
 
@@ -136,13 +242,23 @@ export default function BDCOMAktivasi() {
             <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={showConfig}>Show Config</button>
           </section>
 
-          {/* Card 2: Mode */}
+          {/* Card 2: Mode + OLT type */}
           <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
             <h2 className="text-sm font-semibold mb-4 text-slate-700 dark:text-slate-200">Mode</h2>
+
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Tipe OLT</label>
+              <select value={oltType} onChange={(e) => setOltType(e.target.value)} className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950/60 px-3 py-2 text-sm">
+                <option value={TYPES.AN6000}>FH AN6000</option>
+                <option value={TYPES.AN5116}>FH AN5116</option>
+              </select>
+            </div>
+
+            <Radio name="mode" label="Config V2 ACS" checked={mode === MODES.V2} onChange={() => setMode(MODES.V2)} />
             <Radio name="mode" label="Config V1" checked={mode === MODES.V1} onChange={() => setMode(MODES.V1)} />
             <Radio name="mode" label="Cek IP" checked={mode === MODES.CEK_IP} onChange={() => setMode(MODES.CEK_IP)} />
             <Radio name="mode" label="Cek Redaman" checked={mode === MODES.REDAMAN} onChange={() => setMode(MODES.REDAMAN)} />
-            <Radio name="mode" label="Hapus Ont" checked={mode === MODES.HAPUS} onChange={() => setMode(MODES.HAPUS)} />
+            <Radio name="mode" label="Hapus Config" checked={mode === MODES.HAPUS} onChange={() => setMode(MODES.HAPUS)} />
           </section>
 
           {/* Card 3: Output */}
