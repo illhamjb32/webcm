@@ -204,8 +204,8 @@ export default function Dashboard() {
                 </div>
               </Card>
               <Card title="Catatan">
-                <p className="text-sm text-slate-600 dark:text-slate-300">Website masih beta, beberapa menu/fungsi mungkin belum bekerja penuh. Akah ditambahkan segera...</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300">Demi membantu kelancaran ACS untuk aktivasi sekarang memakai V2 dengan VLAN ACS.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Website masih beta, beberapa menu/fungsi mungkin belum bekerja penuh. Akan ditambahkan segera...</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300"><b>Demi membantu kelancaran ACS untuk aktivasi sekarang memakai V2 dengan VLAN ACS.</b></p>
               </Card>
             </div>
           )}
