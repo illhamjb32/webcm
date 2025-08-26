@@ -82,55 +82,65 @@ export default function ZTEAktivasi() {
     if (needsFull && !requireAll()) return;
 
     if (mode === MODES.V1) {
-      if (oltType === TYPES.C320) {
-        const tpl = [
-          "Configure terminal",
-          `Interface gpon-onu_${FSP_COLON_ONT}`,
-          `Description ${sid}-${nama}`,
-          "Sn-bind enable sn",
-          "Tcont 1 name HIS Profile PPPOE",
-          "Gemport 1 name HIS tcont 1",
-          `Service-port 1 vport 1 user-vlan ${vlan} vlan ${vlan}`,
-          "Exit",
-          `Pon-onu-mng gpon-onu_${FSP_COLON_ONT}`,
-          `Service HIS gemport 1 vlan ${vlan}`,
-          `wan-ip 1 mode pppoe username ${sn} password ${password} vlan-profile vlan${vlan} host 1`,
-          `vlan port eth_0/1 mode tag vlan ${vlan}`,
-          `vlan port eth_0/2 mode tag vlan ${vlan}`,
-          "wan 1 ssid 1 ethuni 1,2 service internet host 1",
-          "end",
-          "write",
-        ].join("\n\n");
-        setOutput(tpl);
-        return;
-      }
+  if (oltType === TYPES.C320) {
+    // Derive F/S/P and ONT from "FSP_COLON_ONT" like "1/2/3:45"
+    const [fsp, onuId] = String(FSP_COLON_ONT).split(":");
+
+    const tpl = [
+      "config terminal",
+      `interface gpon-olt_${fsp}`,
+      `onu ${onuId} type ZTEG-F609 sn ${sn}`,
+      "exit",
+      `interface gpon-onu_${fsp}:${onuId}`,
+      `description ${sid}-${nama}`,
+      "sn-bind enable sn",
+      "tcont 1 name HSI profile PPPOE",
+      "gemport 1 name HSI tcont 1",
+      `service-port 1 vport 1 user-vlan ${vlan} vlan ${vlan}`,
+      "exit",
+      `pon-onu-mng gpon-onu_${fsp}:${onuId}`,
+      `service HSI gemport 1 vlan ${vlan}`,
+      `wan-ip 1 mode pppoe username ${sn} password ${password} vlan-profile vlan${vlan} host 1`,
+      `vlan port eth_0/1 mode tag vlan ${vlan}`,
+      `vlan port eth_0/2 mode tag vlan ${vlan}`,
+      "wan 1 ssid 1 ethuni 1,2 service internet host 1",
+      "end",
+      "write\n",
+    ].join("\n\n");
+
+    setOutput(tpl);
+    return;
+  }
+
+
 
       if (oltType === TYPES.C610) {
-        const tpl = [
-          "config t",
-          `interface gpon_olt-${FSP}`,
-          `onu ${ontId} type ZTEG-F609 sn ${sn}`,
-          "exit",
-          `interface gpon_onu-${FSP_COLON_ONT}`,
-          `description ${sid}_${nama}`,
-          "tcont 1 name HSI profile PPPOE",
-          "gemport 1 name HSI tcont 1",
-          "exit",
-          `interface vport-${FSP}.${ontId}:1`,
-          `service-port 1 user-vlan ${vlan} vlan ${vlan}`,
-          "exit",
-          `pon-onu-mng gpon_onu-${FSP_COLON_ONT}`,
-          `service HSI gemport 1 vlan ${vlan}`,
-          `wan-ip ipv4 mode pppoe username ${sn} password ${password}  vlan-profile vlan${vlan} host 1`,
-          `vlan port eth_0/1 mode tag vlan ${vlan}`,
-          `vlan port eth_0/2 mode tag vlan ${vlan}`,
-          "wan 1 ssid 1 ethuni 1,2 service internet host 1",
-          "end",
-          "write",
-        ].join("\n\n");
-        setOutput(tpl);
-        return;
-      }
+  const tpl = [
+    "config terminal",
+    `interface gpon_olt-${FSP}`,
+    `onu ${ontId} type ZTEG-F609 sn ${sn}`,
+    "exit",
+    `interface gpon_onu-${FSP_COLON_ONT}`,
+    `description ${sid}-${nama}`,
+    "tcont 1 name HSI profile PPPOE",
+    "gemport 1 name HSI tcont 1",
+    "exit",
+    `interface vport-${FSP}.${ontId}:1`,
+    `service-port 1 user-vlan ${vlan} vlan ${vlan}`,
+    "exit",
+    `pon-onu-mng gpon_onu-${FSP_COLON_ONT}`,
+    `service HSI gemport 1 vlan ${vlan}`,
+    `wan-ip ipv4 mode pppoe username ${sn} password ${password} vlan-profile vlan${vlan} host 1`,
+    `vlan port eth_0/1 mode tag vlan ${vlan}`,
+    `vlan port eth_0/2 mode tag vlan ${vlan}`,
+    "wan 1 ssid 1 ethuni 1,2 service internet host 1",
+    "end",
+  ].join("\n\n");
+
+  setOutput(tpl);
+  return;
+}
+
     }
 
     if (mode === MODES.REDAMAN) {

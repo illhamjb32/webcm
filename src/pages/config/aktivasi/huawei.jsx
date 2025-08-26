@@ -97,6 +97,7 @@ export default function HuaweiAktivasi() {
 
     if (mode === MODES.V2) {
       const tpl = `config
+      
 interface gpon ${FraSlo}
 
 ont add ${port} ${ontId} sn-auth ${sn} omci ont-lineprofile-name ${lineProfile} ont-srvprofile-name ${lineProfile} desc ${sid}-${nama}
@@ -115,7 +116,7 @@ ont port route ${port} ${ontId} eth 2 enable
 
 ont ipconfig ${port} ${ontId} ip-index 2 dhcp vlan 2989 priority 5
 
-ont tr069-server-config ${port} ${ontId} 4 profile-name ACS
+ont tr069-server-config ${port} ${ontId}  profile-name ACS
 
 ont wan-config ${port} ${ontId} ip-index 2 profile-name ACS
 
@@ -129,7 +130,7 @@ service-port vlan 2989 gpon ${FraSloPor} ont ${ontId} gemport 2 multi-service us
 
 quit
 
-save`;
+save\n`;
       setOutput(tpl);
       return;
     }
@@ -157,7 +158,7 @@ quit
 
 service-port vlan ${vlan} gpon ${FraSloPor} ont ${ontId} gemport 1 multi-service user-vlan ${vlan} tag-transform translate
 
-save`;
+save\n`;
       setOutput(tpl);
       return;
     }

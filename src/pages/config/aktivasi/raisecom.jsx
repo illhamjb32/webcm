@@ -79,17 +79,88 @@ export default function RaisecomAktivasi() {
     const SloPor = `${slot}/${port}`;
     const SloPorOnt = `${slot}/${port}/${ontId}`;
 
-    if (mode === MODES.V2) {
-      const tpl = `Config\n\nGpon-onu ${SloPor} \n\nIphost 1 mode pppoe \n\nIphost 1 pppoe username ${sn}  password ${password} \n\nIphost 1 vlan ${vlan} \n\nIphost 1 service internet \n\nIphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1 \n\nIphost 2 mode dhcp  \n\nIphost 2 service management \n\nIphost 2 vlan 2989 \n\naccess-control http mode allowall \n\naccess-control https mode allowall \n\naccess-control ping mode allowal \n\nend\n\nw s`;
-      setOutput(tpl);
-      return;
-    }
+if (mode === MODES.V2) {
+  const tpl = `config
 
-    if (mode === MODES.V1) {
-      const tpl = `config\n\nint gpon-olt ${SloPor}\n\ncreate gpon-onu ${ontId} sn ${sn} line-profile-id ${lineProfileId} service-profile-id 1\n\nquit\n\nint gpon-onu ${SloPorOnt}\n\ndesc ${sid}-${nama}\n\nquit\n\ngpon-onu ${SloPorOnt}\n\niphost 1 mode pppoe\n\niphost 1 pppoe username ${sn} password ${password}\n\niphost 1 vlan ${vlan}\n\niphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1\n\niphost 1 service internet\n\nend\n\nwrite startup-config`;
-      setOutput(tpl);
-      return;
-    }
+int gpon-olt ${SloPor}
+
+create gpon-onu ${ontId} sn ${sn} line-profile-id ${lineProfileId} service-profile-id 1
+
+quit
+
+int gpon-onu ${SloPorOnt}
+
+desc ${sid}-${nama}
+
+quit
+
+gpon-onu ${SloPorOnt}
+
+iphost 1 mode pppoe
+
+iphost 1 pppoe username ${sn} password ${password}
+
+iphost 1 vlan ${vlan}
+
+iphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1
+
+iphost 1 service internet
+
+iphost 2 mode dhcp
+
+iphost 2 service management
+
+iphost 2 vlan 2989
+
+access-control http mode allowall
+
+access-control https mode allowall
+
+access-control ping mode allowall
+
+end
+
+w s
+`;
+  setOutput(tpl);
+  return;
+}
+
+if (mode === MODES.V1) {
+  const tpl = `config
+
+int gpon-olt ${SloPor}
+
+create gpon-onu ${ontId} sn ${sn} line-profile-id ${lineProfileId} service-profile-id 1
+
+quit
+
+int gpon-onu ${SloPorOnt}
+
+desc ${sid}-${nama}
+
+quit
+
+gpon-onu ${SloPorOnt}
+
+iphost 1 mode pppoe
+
+iphost 1 pppoe username ${sn} password ${password}
+
+iphost 1 vlan ${vlan}
+
+iphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1
+
+iphost 1 service internet
+
+end
+
+write startup-config
+`;
+  setOutput(tpl);
+  return;
+}
+
 
     if (mode === MODES.CEK_IP) {
       setOutput(`show gpon-onu ${SloPorOnt} iphost 1`);
