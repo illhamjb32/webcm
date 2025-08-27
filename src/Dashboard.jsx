@@ -10,14 +10,14 @@ export default function Dashboard() {
   // THEME
   const [theme, setTheme] = useState("system");
   useEffect(() => {
-    const saved = localStorage.getItem("login-theme");
+    const saved = localStorage.getItem("cm-theme");
     if (saved === "light" || saved === "dark") setTheme(saved);
   }, []);
   const isSystemDark = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolvedDark = theme === "dark" || (theme === "system" && isSystemDark());
   useEffect(() => {
-    if (theme === "system") localStorage.removeItem("login-theme");
-    else localStorage.setItem("login-theme", theme);
+    if (theme === "system") localStorage.removeItem("cm-theme");
+    else localStorage.setItem("cm-theme", theme);
   }, [theme]);
 
   // Route guard
@@ -249,10 +249,12 @@ export default function Dashboard() {
 
               {/* Catatan: bullet points */}
               <Card title="Catatan">
+      <b><h1>Whats New?</h1></b>
                 <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                  <li>Website masih beta; beberapa menu/fungsi mungkin belum bekerja penuh.</li>
-                  <li><b>Aktivasi disarankan memakai V2 dengan VLAN ACS</b> untuk kelancaran ACS.</li>
+                  <li>Fixing Huawei and Raisecom Config Typo</li>
+                  <li>Adding Reset Button</li>
                 </ul>
+               
               </Card>
             </div>
           )}

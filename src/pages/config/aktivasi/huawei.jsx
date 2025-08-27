@@ -85,6 +85,21 @@ export default function HuaweiAktivasi() {
       // (optional) fallback bisa ditambahkan jika perlu
     }
   }
+//
+function resetForm() {
+  setSn("");
+  setFrame("");
+  setSlot("");
+  setPort("");
+  setOntId("");
+  setLineProfile("");
+  setSid("");
+  setNama("");
+  setPassword(todayDefault); // reset to default password (YYYYMMDD)
+  setVlan("");
+  setErrors({});
+  setOutput("");
+}
 
   // Generate
   function showConfig() {
@@ -249,6 +264,14 @@ save\n`;
             >
               Show Config
             </button>
+ <button
+  className="mt-2 w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
+  onClick={resetForm}
+  type="button"
+>
+  Reset Form
+</button>
+
           </section>
 
           {/* Card 2: Mode */}

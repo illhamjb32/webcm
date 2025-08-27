@@ -41,6 +41,20 @@ export default function BDCOMAktivasi() {
   // Modes (no V2 ACS)
   const MODES = { V1: "v1", CEK_IP: "cekip", REDAMAN: "cekredaman", HAPUS: "hapus" };
   const [mode, setMode] = useState(MODES.V1);
+  // Reset form inputs
+  function resetForm() {
+    setSn("");
+    setSlot("");
+    setPort("");
+    setOntId("");
+    setSid("");
+    setNama("");
+    setPassword(todayDefault); // back to default YYYYMMDD
+    setVlan("");
+    setErrors({});
+    setOutput("");
+    setMode(MODES.V1); // optional: reset mode back to V1
+  }
 
   // Validation
   const [errors, setErrors] = useState({});
@@ -65,7 +79,7 @@ export default function BDCOMAktivasi() {
     try {
       await navigator.clipboard.writeText(output || "");
       setCopied(true); setTimeout(() => setCopied(false), 1500);
-    } catch {}
+    } catch { }
   }
 
   // Build strings
@@ -134,6 +148,14 @@ export default function BDCOMAktivasi() {
             <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="10" />
 
             <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={showConfig}>Show Config</button>
+            <button
+              className="mt-2 w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
+              onClick={resetForm}
+              type="button"
+            >
+              Reset Form
+            </button>
+
           </section>
 
           {/* Card 2: Mode */}

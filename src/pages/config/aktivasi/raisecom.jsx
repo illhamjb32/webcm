@@ -67,8 +67,24 @@ export default function RaisecomAktivasi() {
     try {
       await navigator.clipboard.writeText(output || "");
       setCopied(true); setTimeout(() => setCopied(false), 1500);
-    } catch {}
+    } catch { }
   }
+  //rst
+ // Reset form inputs
+function resetForm() {
+  setSn("");
+  setSlot("");
+  setPort("");
+  setOntId("");
+  setLineProfileId("");
+  setSid("");
+  setNama("");
+  setVlan("");
+  setPassword(todayDefault); // reset back to default date (YYYYMMDD)
+  setErrors({});
+  setOutput("");
+}
+
 
   // Generate
   function showConfig() {
@@ -79,8 +95,8 @@ export default function RaisecomAktivasi() {
     const SloPor = `${slot}/${port}`;
     const SloPorOnt = `${slot}/${port}/${ontId}`;
 
-if (mode === MODES.V2) {
-  const tpl = `config
+    if (mode === MODES.V2) {
+      const tpl = `config
 
 int gpon-olt ${SloPor}
 
@@ -122,12 +138,12 @@ end
 
 w s
 `;
-  setOutput(tpl);
-  return;
-}
+      setOutput(tpl);
+      return;
+    }
 
-if (mode === MODES.V1) {
-  const tpl = `config
+    if (mode === MODES.V1) {
+      const tpl = `config
 
 int gpon-olt ${SloPor}
 
@@ -157,9 +173,9 @@ end
 
 write startup-config
 `;
-  setOutput(tpl);
-  return;
-}
+      setOutput(tpl);
+      return;
+    }
 
 
     if (mode === MODES.CEK_IP) {
@@ -217,6 +233,14 @@ write startup-config
             <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="10" />
 
             <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={showConfig}>Show Config</button>
+            <button
+              className="mt-2 w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
+              onClick={resetForm}
+              type="button"
+            >
+              Reset Form
+            </button>
+
           </section>
 
           {/* Card 2: Mode */}

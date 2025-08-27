@@ -66,10 +66,26 @@ export default function ViberlinkAktivasi() {
     try {
       await navigator.clipboard.writeText(output || "");
       setCopied(true); setTimeout(() => setCopied(false), 1500);
-    } catch {}
+    } catch { }
   }
 
   const FSP = `${frame}/${slot}/${port}`;
+  //rst
+  // Reset form inputs
+  function resetForm() {
+    setSn("");
+    setFrame("1"); // back to default 1
+    setSlot("");
+    setPort("");
+    setOntId("");
+    setTypeOnt("");
+    setUsername("");
+    setPassword("");
+    setVlan("");
+    setErrors({});
+    setOutput("");
+    setMode(MODES.CONFIG); // optional: reset mode back to CONFIG
+  }
 
   function showConfig() {
     if (mode === MODES.CONFIG) {
@@ -162,6 +178,14 @@ export default function ViberlinkAktivasi() {
             <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="10" />
 
             <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={showConfig}>Show Config</button>
+            <button
+              className="mt-2 w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
+              onClick={resetForm}
+              type="button"
+            >
+              Reset Form
+            </button>
+
           </section>
 
           {/* Card 2: Mode */}

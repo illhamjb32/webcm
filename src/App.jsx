@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   // Determine initial theme
   useEffect(() => {
-    const saved = localStorage.getItem("login-theme");
+    const saved = localStorage.getItem("cm-theme");
     if (saved === "light" || saved === "dark") {
       setTheme(saved);
     } else {
@@ -31,9 +31,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (theme === "system") {
-      localStorage.removeItem("login-theme");
+      localStorage.removeItem("cm-theme");
     } else {
-      localStorage.setItem("login-theme", theme);
+      localStorage.setItem("cm-theme", theme);
     }
   }, [theme]);
 

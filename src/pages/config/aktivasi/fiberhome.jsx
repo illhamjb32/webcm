@@ -48,6 +48,23 @@ export default function FiberhomeAktivasi() {
   const [mode, setMode] = useState(MODES.V2);
   const TYPES = { AN6000: "an6000", AN5116: "an5116" };
   const [oltType, setOltType] = useState(TYPES.AN6000);
+  // Reset form inputs
+  function resetForm() {
+    setSn("");
+    setFrame("1"); // default back to 1
+    setSlot("");
+    setPort("");
+    setOntId("");
+    setTypeOnt("");
+    setSid("");
+    setNama("");
+    setPassword(todayDefault); // reset back to default date (YYYYMMDD)
+    setVlan("");
+    setErrors({});
+    setOutput("");
+    setMode(MODES.V2);          // optional: reset mode back to V2
+    setOltType(TYPES.AN6000);   // optional: reset OLT type back to AN6000
+  }
 
   // Validation
   const [errors, setErrors] = useState({});
@@ -74,7 +91,7 @@ export default function FiberhomeAktivasi() {
     try {
       await navigator.clipboard.writeText(output || "");
       setCopied(true); setTimeout(() => setCopied(false), 1500);
-    } catch {}
+    } catch { }
   }
 
   // Helpers
@@ -259,6 +276,14 @@ export default function FiberhomeAktivasi() {
             <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="10" />
 
             <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={showConfig}>Show Config</button>
+            <button
+              className="mt-2 w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
+              onClick={resetForm}
+              type="button"
+            >
+              Reset Form
+            </button>
+
           </section>
 
           {/* Card 2: Mode + OLT type */}
