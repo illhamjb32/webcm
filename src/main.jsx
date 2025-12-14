@@ -15,6 +15,7 @@ import BDCOMAktivasi from "./pages/config/aktivasi/bdcom";
 import ZTEAktivasi from "./pages/config/aktivasi/zte";
 import FiberhomeAktivasi from "./pages/config/aktivasi/fiberhome";
 import ViberlinkAktivasi from "./pages/config/aktivasi/viberlink";
+import RaisecomMigrasiACS from "./pages/tools/raisecom"
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -34,7 +35,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/dashboard/config/aktivasi/zte" element={<ZTEAktivasi />} />
         <Route path="/dashboard/config/aktivasi/fiberhome" element={<FiberhomeAktivasi />} />
         <Route path="/dashboard/config/aktivasi/viberlink" element={<ViberlinkAktivasi />} />
-
+        <Route path="/dashboard/tools/migrasi-acs/raisecom" element={<RaisecomMigrasiACS />} />
       </Routes>
     </HashRouter>
   </React.StrictMode>
