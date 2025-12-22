@@ -208,7 +208,7 @@ export default function Dashboard() {
                 ))}
 
                 <li className="px-3 pt-2 text-xs font-semibold text-slate-500">
-                  Tools · Migrasi ACS
+                  Tools → Migrasi ACS → Raisecom sudah aktif
                 </li>
                 <li>
                   <NavLink
@@ -235,12 +235,14 @@ export default function Dashboard() {
 
             <Card title="Info">
               <p>Tools → Migrasi ACS → Raisecom sudah aktif</p>
+              <p><b>Pekerjaan Dilakukan Dengan Teliti</b></p>
             </Card>
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
                 <li>Menambahkan Tool - Migrasi ACS untuk Raisecom</li>
                 <li>Dropdown auto close</li>
+                <li>Multiple ACS Beta ready</li>
               </ul>
             </Card>
           </div>
