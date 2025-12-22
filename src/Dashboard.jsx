@@ -239,7 +239,7 @@ export default function Dashboard() {
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
-                <li>Fix Huawei & Raisecom Typo</li>
+                <li>Menambahkan Tool - Migrasi ACS untuk Raisecom</li>
                 <li>Dropdown auto close</li>
               </ul>
             </Card>
