@@ -298,10 +298,9 @@ quit`;
     // Search for a gpon-onu-line-profile block that defines that name
     let lineProfileFound = null;
     if (expectedLineProfile) {
-      const lpRegex = new RegExp('gpon-onu-line-profile\\s+\\d+[\\s\\S]*?name\\s+' + expectedLineProfile.replace(/\./g,'\\.') , 'i');
+      const lpRegex = new RegExp('gpon-onu-line-profile\\s+\\d+[\\s\\S]*?name\\s+' + expectedLineProfile.replace(/\./g,'\\.' ) , 'i');
       const cfgText = cfg;
       if (lpRegex.test(cfgText)) {
-        // Try to capture the exact name line if present
         const nm = cfgText.match(new RegExp('name\\s+(' + expectedLineProfile.replace(/\./g,'\\.') + ')', 'i'));
         lineProfileFound = nm ? nm[1] : expectedLineProfile;
       }
@@ -417,6 +416,100 @@ quit`;
 
     const out = parts.join('\n');
     setOutput(out + '\n');
+  }
+
+  // Select all parsed SNs
+  function checkAll() {
+    setSelectedSNs(parsedSNs.slice());
+  }
+
+  // Build full migration snippet for an SN (returns string or throws)
+  function buildMigrationForSN(sn) {
+    if (!globalConfig) throw new Error('Global config belum diupload');
+    const res = parseConfigForSN(sn, globalConfig);
+    if (res.error) throw new Error(`${sn}: ${res.error}`);
+
+    if (!res.lineProfileFound) {
+      throw new Error(`${sn}: LINEPROFILE BELUM READY`);
+    }
+
+    const iface = `interface gpon-onu ${res.S}/${res.P}/${res.ID}\nline-profile-name ${res.lineProfileFound}\nservice-profile-name ACS-v2\nquit\n`;
+
+    let full = `${iface}\n${res.minimalSavedConfig.replace(/\r/g,'')}\n`;
+    full += `iphost 2 mode dhcp\n`;
+    full += `iphost 2 service management\n`;
+    full += `iphost 2 vlan 2989\n`;
+    full += `access-control http mode allowall\n`;
+    full += `access-control https mode allowall\n`;
+    full += `access-control ping mode allowall\n`;
+    full = full.trimEnd() + `\nquit\n`;
+
+    return full;
+  }
+
+  // Export configs for selected SNs (or all parsedSNs if none selected)
+  async function exportConfigs() {
+    const targets = selectedSNs.length > 0 ? selectedSNs : parsedSNs;
+    if (!targets || targets.length === 0) {
+      alert('Tidak ada SN untuk diexport');
+      return;
+    }
+
+    // Derive OLT name from uploaded file name (without extension) or fallback
+    let oltName = 'UNKNOWN-OLT';
+    if (uploadedFile && uploadedFile.name) {
+      oltName = uploadedFile.name.replace(/\.[^/.]+$/, '');
+    } else if (globalConfig) {
+      // try to find a hostname or device id in config
+      const m = globalConfig.match(/^(?:hostname|device-name)\s+(.+)$/im);
+      if (m) oltName = m[1].trim();
+    }
+
+    const lines = [];
+    lines.push('EXPORTED DRY RUN CONFIG FOR RAISECOM ACS MIGRATION');
+    lines.push(`OLT: ${oltName}`);
+    lines.push('========================================================================');
+
+    for (const sn of targets) {
+      try {
+        // use saved minimal if available to persist early
+        if (!savedConfigs?.[sn] && globalConfig) {
+          const parsed = parseConfigForSN(sn, globalConfig);
+          if (!parsed.error && parsed.minimalSavedConfig) saveSavedConfig(sn, parsed.minimalSavedConfig);
+        }
+        lines.push('');
+        const snippet = buildMigrationForSN(sn);
+        lines.push(`SN : ${sn} \n`);
+        lines.push(snippet);
+        lines.push('');
+        lines.push('========================================================================');
+
+      } catch (e) {
+        lines.push(`# ${sn} - skipped: ${e.message}`);
+        lines.push('');
+      }
+    }
+
+    const content = lines.join('\n');
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const filename = `export_dataacs_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.txt`;
+
+    try {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.warn('Export failed', e);
+      alert('Gagal mengekspor file');
+    }
   }
 
   return (
@@ -538,6 +631,18 @@ quit`;
                     className="text-xs bg-gray-600 text-white px-3 py-1.5 rounded-lg"
                   >
                     Clear Selection
+                  </button>
+                  <button
+                    onClick={() => checkAll()}
+                    className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg"
+                  >
+                    Check All
+                  </button>
+                  <button
+                    onClick={() => exportConfigs()}
+                    className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg"
+                  >
+                    Export Config
                   </button>
                 </div>
                 <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
