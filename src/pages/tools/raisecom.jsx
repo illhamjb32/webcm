@@ -36,6 +36,8 @@ export default function RaisecomMigrasi() {
   const [selectedSNs, setSelectedSNs] = useState([]);
   const [globalConfig, setGlobalConfig] = useState("");
   const [lastCheckedSN, setLastCheckedSN] = useState(null);
+  // multiple view mode: 'all' | 'line-service' | 'gpon-onu'
+  const [multipleViewMode, setMultipleViewMode] = useState('all');
 
   // ===== OUTPUT =====
   const [output, setOutput] = useState("");
@@ -108,9 +110,75 @@ quit`;
 
       setOutput(tpl);
     } else if (mode === "multiple") {
-      // Placeholder for multiple mode logic
-      // For now, just set output to globalConfig or something
-      setOutput(globalConfig || "Config global belum diupload");
+      // Build preview output according to multipleViewMode (All / Line&Serv / GPON-ONU)
+      const targets = selectedSNs.length > 0 ? selectedSNs : parsedSNs;
+      if (!targets || targets.length === 0) {
+        alert('Tidak ada SN untuk diproses');
+        return;
+      }
+
+      if (!globalConfig) {
+        alert('Silakan upload konfigurasi OLT terlebih dahulu.');
+        return;
+      }
+
+      // Build output lines. For 'line-service' and 'gpon-onu' keep plain snippets
+      const lines = [];
+
+      for (const sn of targets) {
+        try {
+          // ensure minimal saved config exists where possible
+          if (!savedConfigs?.[sn] && globalConfig) {
+            const parsed = parseConfigForSN(sn, globalConfig);
+            if (!parsed.error && parsed.minimalSavedConfig) saveSavedConfig(sn, parsed.minimalSavedConfig);
+          }
+
+          let snippet = '';
+
+          if (multipleViewMode === 'all') {
+            try {
+              snippet = buildMigrationForSN(sn);
+            } catch (e) {
+              snippet = `# ${sn} - skipped: ${e.message}\n`;
+            }
+          } else {
+            const parsed = parseConfigForSN(sn, globalConfig);
+            if (parsed.error) throw new Error(parsed.error);
+
+            if (multipleViewMode === 'line-service') {
+              const lp = parsed.lineProfileFound || parsed.expectedLineProfile || (parsed.iphost1Vlan ? `NEWAP1.${parsed.iphost1Vlan}.ACS` : 'UNKNOWN');
+              snippet = `interface gpon-onu ${parsed.S}/${parsed.P}/${parsed.ID}\nline-profile-name ${lp}\nservice-profile-name ACS-v2\nquit\n\n`;
+            } else if (multipleViewMode === 'gpon-onu') {
+              if (parsed.onuBlock) {
+                const block = parsed.onuBlock.trim();
+                snippet = /quit$/i.test(block) ? block + '\n\n' : block + '\nquit\n\n';
+              } else {
+                snippet = '';
+              }
+            }
+
+            if (!savedConfigs?.[sn] && parsed.minimalSavedConfig) saveSavedConfig(sn, parsed.minimalSavedConfig);
+          }
+
+          // For line-service and gpon-onu we output only the snippet (plain)
+          if (multipleViewMode === 'line-service' || multipleViewMode === 'gpon-onu') {
+            lines.push(snippet.trim());
+            lines.push('');
+          } else {
+            lines.push(`SN : ${sn} \n`);
+            lines.push(snippet);
+            lines.push('');
+            lines.push('========================================================================');
+          }
+
+        } catch (e) {
+          lines.push(`# ${sn} - skipped: ${e.message}`);
+          lines.push('');
+        }
+      }
+
+      const content = lines.join('\n');
+      setOutput(content);
     }
   }
 
@@ -155,9 +223,16 @@ quit`;
   useEffect(() => {
     try {
       const s = localStorage.getItem('raisecom.snList');
-      if (s) setSnList(s);
+      if (s) {
+        setSnList(s);
+        console.log('Loaded snList from localStorage');
+      }
       const sel = localStorage.getItem('raisecom.selectedSNs');
-      if (sel) setSelectedSNs(JSON.parse(sel));
+      if (sel) {
+        const parsed = JSON.parse(sel);
+        setSelectedSNs(parsed);
+        console.log('Loaded selectedSNs from localStorage:', parsed);
+      }
     } catch (e) {
       console.warn('Failed to load snList/selectedSNs', e);
     }
@@ -175,6 +250,7 @@ quit`;
   useEffect(() => {
     try {
       localStorage.setItem('raisecom.selectedSNs', JSON.stringify(selectedSNs));
+      console.log('Saved selectedSNs to localStorage:', selectedSNs);
     } catch (e) {
       console.warn('Failed to persist selectedSNs', e);
     }
@@ -197,6 +273,8 @@ quit`;
     if (!confirm('Hapus semua data tersimpan dan reset ke default?')) return;
     try {
       localStorage.removeItem('raisecom.savedConfigs');
+      localStorage.removeItem('raisecom.selectedSNs');
+      localStorage.removeItem('raisecom.snList');
     } catch (e) {
       console.warn('Failed to remove saved configs', e);
     }
@@ -423,6 +501,14 @@ quit`;
     setSelectedSNs(parsedSNs.slice());
   }
 
+  // Check next batch of SNs (e.g., +10 each click)
+  function checkNextBatch(batchSize = 10) {
+    const remaining = parsedSNs.filter(sn => !selectedSNs.includes(sn));
+    if (!remaining || remaining.length === 0) return;
+    const toAdd = remaining.slice(0, batchSize);
+    setSelectedSNs(prev => [...prev, ...toAdd]);
+  }
+
   // Build full migration snippet for an SN (returns string or throws)
   function buildMigrationForSN(sn) {
     if (!globalConfig) throw new Error('Global config belum diupload');
@@ -466,23 +552,59 @@ quit`;
     }
 
     const lines = [];
-    lines.push('EXPORTED DRY RUN CONFIG FOR RAISECOM ACS MIGRATION');
-    lines.push(`OLT: ${oltName}`);
-    lines.push('========================================================================');
+    // For full 'all' export include header; for line-service/gpon-onu export plain snippets
+    if (multipleViewMode === 'all') {
+      lines.push('EXPORTED DRY RUN CONFIG FOR RAISECOM ACS MIGRATION');
+      lines.push(`OLT: ${oltName}`);
+      lines.push('========================================================================');
+    }
 
     for (const sn of targets) {
       try {
-        // use saved minimal if available to persist early
+        // try to ensure minimal saved config exists
         if (!savedConfigs?.[sn] && globalConfig) {
           const parsed = parseConfigForSN(sn, globalConfig);
           if (!parsed.error && parsed.minimalSavedConfig) saveSavedConfig(sn, parsed.minimalSavedConfig);
         }
         lines.push('');
-        const snippet = buildMigrationForSN(sn);
-        lines.push(`SN : ${sn} \n`);
-        lines.push(snippet);
-        lines.push('');
-        lines.push('========================================================================');
+        let snippet = '';
+
+        if (multipleViewMode === 'all') {
+          // full migration snippet
+          snippet = buildMigrationForSN(sn);
+        } else {
+          if (!globalConfig) throw new Error('Global config belum diupload');
+          const parsed = parseConfigForSN(sn, globalConfig);
+          if (parsed.error) throw new Error(parsed.error);
+
+          if (multipleViewMode === 'line-service') {
+            const lp = parsed.lineProfileFound || parsed.expectedLineProfile || (parsed.iphost1Vlan ? `NEWAP1.${parsed.iphost1Vlan}.ACS` : 'UNKNOWN');
+            snippet = `interface gpon-onu ${parsed.S}/${parsed.P}/${parsed.ID}\nline-profile-name ${lp}\nservice-profile-name ACS-v2\nquit\n\n`;
+            } else if (multipleViewMode === 'gpon-onu') {
+            if (parsed.onuBlock) {
+              const block = parsed.onuBlock.trim();
+              snippet = /quit$/i.test(block) ? block + '\n\n' : block + '\nquit\n\n';
+            } else {
+              snippet = '';
+            }
+          } else {
+            snippet = buildMigrationForSN(sn);
+          }
+
+          // persist minimal if we have it
+          if (!savedConfigs?.[sn] && parsed.minimalSavedConfig) saveSavedConfig(sn, parsed.minimalSavedConfig);
+        }
+
+        if (multipleViewMode === 'all') {
+          lines.push(`SN : ${sn} \n`);
+          lines.push(snippet);
+          lines.push('');
+          lines.push('========================================================================');
+        } else {
+          // plain snippets only
+          lines.push(snippet.trim());
+          lines.push('');
+        }
 
       } catch (e) {
         lines.push(`# ${sn} - skipped: ${e.message}`);
@@ -497,6 +619,9 @@ quit`;
     const filename = `export_dataacs_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.txt`;
 
     try {
+      // also preview in output textarea
+      setOutput(content);
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -595,6 +720,21 @@ quit`;
             {mode === "multiple" && (
               <div className="mt-3">
                 <h3 className="font-semibold text-sm mb-2">List SN</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <label className={`flex items-center gap-2 px-2 py-1 rounded-xl cursor-pointer ${multipleViewMode==='all' ? 'bg-slate-100 dark:bg-slate-800' : ''}`}>
+                    <input type="radio" name="multipleViewMode" value="all" checked={multipleViewMode==='all'} onChange={(e) => setMultipleViewMode(e.target.value)} />
+                    <span className="text-sm">All</span>
+                  </label>
+                  <label className={`flex items-center gap-2 px-2 py-1 rounded-xl cursor-pointer ${multipleViewMode==='line-service' ? 'bg-slate-100 dark:bg-slate-800' : ''}`}>
+                    <input type="radio" name="multipleViewMode" value="line-service" checked={multipleViewMode==='line-service'} onChange={(e) => setMultipleViewMode(e.target.value)} />
+                    <span className="text-sm">Line&Serv</span>
+                  </label>
+                  <label className={`flex items-center gap-2 px-2 py-1 rounded-xl cursor-pointer ${multipleViewMode==='gpon-onu' ? 'bg-slate-100 dark:bg-slate-800' : ''}`}>
+                    <input type="radio" name="multipleViewMode" value="gpon-onu" checked={multipleViewMode==='gpon-onu'} onChange={(e) => setMultipleViewMode(e.target.value)} />
+                    <span className="text-sm">GPON-ONU</span>
+                  </label>
+                </div>
+
                 <div className="max-h-64 overflow-y-auto border rounded-xl p-2">
                   {parsedSNs.map((sn, index) => (
                     <div
@@ -631,6 +771,12 @@ quit`;
                     className="text-xs bg-gray-600 text-white px-3 py-1.5 rounded-lg"
                   >
                     Clear Selection
+                  </button>
+                  <button
+                    onClick={() => checkNextBatch(10)}
+                    className="text-xs bg-yellow-600 text-white px-3 py-1.5 rounded-lg"
+                  >
+                    Check +10
                   </button>
                   <button
                     onClick={() => checkAll()}
