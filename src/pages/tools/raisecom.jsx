@@ -150,8 +150,30 @@ quit`;
               snippet = `interface gpon-onu ${parsed.S}/${parsed.P}/${parsed.ID}\nline-profile-name ${lp}\nservice-profile-name ACS-v2\nquit\n\n`;
             } else if (multipleViewMode === 'gpon-onu') {
               if (parsed.onuBlock) {
-                const block = parsed.onuBlock.trim();
-                snippet = /quit$/i.test(block) ? block + '\n\n' : block + '\nquit\n\n';
+                let block = parsed.onuBlock.trim();
+                // Remove trailing quit if present to rebuild it
+                block = block.replace(/\nquit\s*$/i, '');
+                // Append iphost 2 and access-control if not present
+                if (!/iphost\s+2\s+mode\s+dhcp/i.test(block)) {
+                  block += `\niphost 2 mode dhcp`;
+                }
+                if (!/iphost\s+2\s+service\s+management/i.test(block)) {
+                  block += `\niphost 2 service management`;
+                }
+                if (!/iphost\s+2\s+vlan\s+2989/i.test(block)) {
+                  block += `\niphost 2 vlan 2989`;
+                }
+                if (!/access-control\s+http/i.test(block)) {
+                  block += `\naccess-control http mode allowall`;
+                }
+                if (!/access-control\s+https/i.test(block)) {
+                  block += `\naccess-control https mode allowall`;
+                }
+                if (!/access-control\s+ping/i.test(block)) {
+                  block += `\naccess-control ping mode allowall`;
+                }
+                // Ensure quit at end
+                snippet = block + '\nquit\n\n';
               } else {
                 snippet = '';
               }
@@ -582,8 +604,30 @@ quit`;
             snippet = `interface gpon-onu ${parsed.S}/${parsed.P}/${parsed.ID}\nline-profile-name ${lp}\nservice-profile-name ACS-v2\nquit\n\n`;
             } else if (multipleViewMode === 'gpon-onu') {
             if (parsed.onuBlock) {
-              const block = parsed.onuBlock.trim();
-              snippet = /quit$/i.test(block) ? block + '\n\n' : block + '\nquit\n\n';
+              let block = parsed.onuBlock.trim();
+              // Remove trailing quit if present to rebuild it
+              block = block.replace(/\nquit\s*$/i, '');
+              // Append iphost 2 and access-control if not present
+              if (!/iphost\s+2\s+mode\s+dhcp/i.test(block)) {
+                block += `\niphost 2 mode dhcp`;
+              }
+              if (!/iphost\s+2\s+service\s+management/i.test(block)) {
+                block += `\niphost 2 service management`;
+              }
+              if (!/iphost\s+2\s+vlan\s+2989/i.test(block)) {
+                block += `\niphost 2 vlan 2989`;
+              }
+              if (!/access-control\s+http/i.test(block)) {
+                block += `\naccess-control http mode allowall`;
+              }
+              if (!/access-control\s+https/i.test(block)) {
+                block += `\naccess-control https mode allowall`;
+              }
+              if (!/access-control\s+ping/i.test(block)) {
+                block += `\naccess-control ping mode allowall`;
+              }
+              // Ensure quit at end
+              snippet = block + '\nquit\n\n';
             } else {
               snippet = '';
             }
