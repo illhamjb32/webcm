@@ -39,6 +39,14 @@ export default function RaisecomMigrasi() {
   // multiple view mode: 'all' | 'line-service' | 'gpon-onu'
   const [multipleViewMode, setMultipleViewMode] = useState('all');
 
+  // ===== COMPARE MODE STATES =====
+  const [compareConfigBefore, setCompareConfigBefore] = useState("");
+  const [compareConfigAfter, setCompareConfigAfter] = useState("");
+  const [compareSNList, setCompareSNList] = useState("");
+  const [compareResult, setCompareResult] = useState("");
+  const [compareResultsData, setCompareResultsData] = useState([]);
+  const [compareDisplay, setCompareDisplay] = useState('all');
+
   // ===== OUTPUT =====
   const [output, setOutput] = useState("");
   // saved minimal configs per SN persisted in browser
@@ -218,6 +226,174 @@ quit`;
       alert("File harus berupa .txt atau .rtf");
     }
   };
+
+  // Handle compare file upload
+  const handleCompareFileUpload = (e, isAfter = false) => {
+    const file = e.target.files[0];
+    if (file && (file.type === "text/plain" || file.name.endsWith(".rtf"))) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (isAfter) {
+          setCompareConfigAfter(event.target.result);
+        } else {
+          setCompareConfigBefore(event.target.result);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      alert("File harus berupa .txt atau .rtf");
+    }
+  };
+
+  // Extract config block for a specific SN from config text
+  function extractSNConfig(sn, configText) {
+    if (!sn || !configText) return null;
+
+    // Find the line that contains this SN username
+    const lines = configText.split(/\r?\n/);
+    let snLineIndex = -1;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const regex = new RegExp(`iphost\\s+1\\s+pppoe\\s+username\\s+${sn}\\b`, 'i');
+      if (regex.test(lines[i])) {
+        snLineIndex = i;
+        break;
+      }
+    }
+
+    if (snLineIndex === -1) return null;
+
+    // Find the gpon-onu header before this line
+    let headerIndex = -1;
+    for (let i = snLineIndex; i >= 0; i--) {
+      if (/^(?:create\s+)?gpon-onu\s+\d+\/\d+\/\d+/i.test(lines[i])) {
+        headerIndex = i;
+        break;
+      }
+    }
+
+    if (headerIndex === -1) return null;
+
+    // Find the quit after this block
+    let quitIndex = -1;
+    for (let i = snLineIndex + 1; i < lines.length; i++) {
+      if (/^quit\s*$/i.test(lines[i])) {
+        quitIndex = i;
+        break;
+      }
+    }
+
+    if (quitIndex === -1) {
+      // If no quit found, take until next gpon-onu
+      for (let i = snLineIndex + 1; i < lines.length; i++) {
+        if (/^(?:create\s+)?gpon-onu\s+\d+\/\d+\/\d+/i.test(lines[i])) {
+          quitIndex = i - 1;
+          break;
+        }
+      }
+      if (quitIndex === -1) quitIndex = lines.length - 1;
+    }
+
+    // Extract the block as normalized lines
+    const blockLines = lines.slice(headerIndex, quitIndex + 1)
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    return blockLines;
+  }
+
+  // Compare Before and After configurations per SN (structured)
+  function performComparison() {
+    if (!compareConfigBefore.trim()) {
+      alert('Silakan upload config BEFORE terlebih dahulu');
+      return;
+    }
+    if (!compareConfigAfter.trim()) {
+      alert('Silakan upload config AFTER terlebih dahulu');
+      return;
+    }
+
+    // Extract SNs from before config (username list)
+    const beforeLines = compareConfigBefore.split(/\r?\n/);
+    const snMatches = [];
+    for (let i = 0; i < beforeLines.length; i++) {
+      const match = beforeLines[i].match(/iphost\s+1\s+pppoe\s+username\s+(\S+)/i);
+      if (match) snMatches.push(match[1]);
+    }
+
+    if (snMatches.length === 0) {
+      alert('Tidak ada SN yang ditemukan di config BEFORE');
+      setCompareResult('Tidak ada SN yang ditemukan di config BEFORE');
+      setCompareResultsData([]);
+      return;
+    }
+
+    const isAllowedNewLine = (line) => {
+      return /^iphost\s+2\b/i.test(line) || /^access-control\s+/i.test(line) || /^quit$/i.test(line);
+    };
+
+    const data = [];
+    for (const sn of snMatches) {
+      const beforeBlock = extractSNConfig(sn, compareConfigBefore) || [];
+      const afterBlock = extractSNConfig(sn, compareConfigAfter) || [];
+
+      const header = beforeBlock.length > 0 ? beforeBlock[0] : null; // gpon-onu header
+
+      // missing = lines in beforeBlock (excluding header) not present in afterBlock
+      const missingLines = [];
+      for (let i = 1; i < beforeBlock.length; i++) {
+        const line = beforeBlock[i];
+        if (!afterBlock.includes(line)) missingLines.push(line);
+      }
+
+      // unexpected lines in after (excluding allowed ones and header)
+      const unexpected = [];
+      for (const line of afterBlock) {
+        if (line === header) continue;
+        if (!beforeBlock.includes(line) && !isAllowedNewLine(line)) unexpected.push(line);
+      }
+
+      const status = (missingLines.length === 0 && unexpected.length === 0) ? 'Sesuai' : 'GAGAL';
+
+      data.push({ sn, header, beforeBlock, afterBlock, missingLines, unexpected, status });
+    }
+
+    setCompareResultsData(data);
+    // set initial display (current compareDisplay)
+    updateCompareDisplay(compareDisplay, data);
+  }
+
+  // Format structured compare results into text for textarea according to display mode
+  function updateCompareDisplay(mode, dataArg) {
+    const data = dataArg || compareResultsData || [];
+    const lines = [];
+    for (const item of data) {
+      if (mode === 'failed' && item.status !== 'GAGAL') continue;
+
+      if (item.status === 'Sesuai') {
+        lines.push(`SN : ${item.sn} - Sesuai`);
+        if (item.afterBlock && item.afterBlock.length) {
+          lines.push(item.afterBlock.join('\n'));
+        }
+        lines.push('');
+      } else {
+        lines.push(`SN : ${item.sn} - GAGAL`);
+        if (item.missingLines && item.missingLines.length) {
+          lines.push('Missing Config:');
+          if (item.header) lines.push(item.header);
+          item.missingLines.forEach(l => lines.push(`  ${l}`));
+          lines.push('');
+        }
+        if (item.unexpected && item.unexpected.length) {
+          lines.push('Extra Config (tidak diizinkan):');
+          item.unexpected.forEach(l => lines.push(`  ${l}`));
+          lines.push('');
+        }
+      }
+    }
+
+    setCompareResult(lines.join('\n'));
+  }
 
   // Parse SN list
   const parsedSNs = snList.split('\n').filter(sn => sn.trim() !== '');
@@ -721,6 +897,47 @@ quit`;
                   placeholder="Paste output cek iphost di sini"
                 />
               </>
+            ) : mode === "compare" ? (
+              <>
+                <h2 className="font-semibold text-sm mb-3">Upload Config Files</h2>
+                
+                <label className="block text-xs font-medium mb-1">
+                  Config BEFORE
+                </label>
+                <input
+                  type="file"
+                  accept=".txt,.rtf"
+                  onChange={(e) => handleCompareFileUpload(e, false)}
+                  className="w-full mb-3 text-xs"
+                />
+                {compareConfigBefore && (
+                  <div className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-2 py-1 rounded text-xs mb-3">
+                    ✓ File BEFORE uploaded
+                  </div>
+                )}
+
+                <label className="block text-xs font-medium mb-1">
+                  Config AFTER
+                </label>
+                <input
+                  type="file"
+                  accept=".txt,.rtf"
+                  onChange={(e) => handleCompareFileUpload(e, true)}
+                  className="w-full mb-3 text-xs"
+                />
+                {compareConfigAfter && (
+                  <div className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-2 py-1 rounded text-xs mb-3">
+                    ✓ File AFTER uploaded
+                  </div>
+                )}
+
+                <button
+                  onClick={performComparison}
+                  className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm"
+                >
+                  Compare Config
+                </button>
+              </>
             ) : (
               <>
                 <h2 className="font-semibold text-sm mb-3">Upload Global Config OLT</h2>
@@ -742,12 +959,14 @@ quit`;
                 />
               </>
             )}
-            <button
-              onClick={generateConfig}
-              className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm"
-            >
-              Generate Config
-            </button>
+            {mode !== "compare" && (
+              <button
+                onClick={generateConfig}
+                className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm"
+              >
+                Generate Config
+              </button>
+            )}
           </section>
 
           {/* COLUMN 2 */}
@@ -759,8 +978,24 @@ quit`;
               className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-slate-950"
             >
               <option value="single">Single ACS</option>
-              <option value="multiple">Multiple ACS</option>
+              <option value="multiple" disabled>(Maintenance)Multiple ACS</option>
+              <option value="compare" disabled>(Maintenance)Compare Before After</option>
             </select>
+            {mode === "compare" && (
+              <div className="mt-3">
+                <h3 className="font-semibold text-sm mb-2">Paste SN</h3>
+                <label className="block text-xs font-medium mb-1">
+                  SN (optional)
+                </label>
+                <textarea
+                  value={compareSNList}
+                  onChange={(e) => setCompareSNList(e.target.value)}
+                  rows={8}
+                  className="w-full rounded-xl border p-3 font-mono text-sm dark:bg-slate-950"
+                  placeholder="Paste SN di sini (opsional, untuk referensi)"
+                />
+              </div>
+            )}
             {mode === "multiple" && (
               <div className="mt-3">
                 <h3 className="font-semibold text-sm mb-2">List SN</h3>
@@ -846,26 +1081,44 @@ quit`;
           {/* COLUMN 3 */}
           <section className="rounded-2xl border p-4 bg-white/80 dark:bg-slate-900/60 flex flex-col">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="font-semibold text-sm">Output Config</h2>
-              <button
-                onClick={handleCopy}
-                className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg"
-              >
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-              <button
-                onClick={clearAllData}
-                className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg ml-2"
-              >
-                Hapus Data
-              </button>
+              <h2 className="font-semibold text-sm">{mode === "compare" ? "Comparison Result" : "Output Config"}</h2>
+              <div className="flex items-center gap-2">
+                {mode === 'compare' && (
+                  <>
+                    <button
+                      onClick={() => { setCompareDisplay('all'); updateCompareDisplay('all'); }}
+                      className={`text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg`}
+                    >
+                      Tampilkan Semua
+                    </button>
+                    <button
+                      onClick={() => { setCompareDisplay('failed'); updateCompareDisplay('failed'); }}
+                      className={`text-xs bg-yellow-600 text-white px-3 py-1.5 rounded-lg`}
+                    >
+                      Tampilkan Gagal
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={handleCopy}
+                  className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg"
+                >
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+                <button
+                  onClick={clearAllData}
+                  className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg ml-2"
+                >
+                  Hapus Data
+                </button>
+              </div>
             </div>
             <textarea
-              value={output}
+              value={mode === "compare" ? compareResult : output}
               readOnly
               rows={22}
               className="flex-1 rounded-xl border p-3 font-mono text-sm dark:bg-slate-950"
-              placeholder="Config migrasi akan muncul di sini"
+              placeholder={mode === "compare" ? "Hasil perbandingan akan muncul di sini" : "Config migrasi akan muncul di sini"}
             />
           </section>
         </div>
