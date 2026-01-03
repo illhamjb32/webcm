@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import WarningBanner from "../../components/WarningBanner";
 
 export default function RaisecomMigrasi() {
   const navigate = useNavigate();
@@ -53,6 +54,14 @@ export default function RaisecomMigrasi() {
   const [savedConfigs, setSavedConfigs] = useState({});
   // copy feedback state
   const [copied, setCopied] = useState(false);
+
+  // ===== BANNER STATES =====
+  const [showBanner, setShowBanner] = useState(true);
+
+  // Handle banner close
+  const handleBannerClose = () => {
+    setShowBanner(false);
+  };
 
   // ===== VALIDATION + PARSER =====
   function generateConfig() {
@@ -161,6 +170,30 @@ quit`;
                 let block = parsed.onuBlock.trim();
                 // Remove trailing quit if present to rebuild it
                 block = block.replace(/\nquit\s*$/i, '');
+
+                // Validate iphost 1 configuration
+                const validation = validateIphost1Config(block);
+                let validationMsg = '';
+                if (validation.warnings.length > 0) {
+                  validationMsg += validation.warnings.join('\n') + '\n';
+                }
+
+                // Apply fixes for missing iphost 1 configurations
+                // Add iphost 1 mode pppoe if missing
+                if (!/iphost\s+1\s+mode\s+pppoe/i.test(block)) {
+                  block = 'iphost 1 mode pppoe\n' + block;
+                }
+
+                // Add iphost 1 service Internet if missing
+                if (!/iphost\s+1\s+service\s+Internet/i.test(block)) {
+                  block += `\niphost 1 service Internet`;
+                }
+
+                // Add iphost 1 service mode route nat enable... if missing
+                if (!/iphost\s+1\s+service\s+mode\s+route\s+nat\s+enable\s+cos\s+0\s+portlist\s+\S+/i.test(block)) {
+                  block += `\niphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1`;
+                }
+
                 // Append iphost 2 and access-control if not present
                 if (!/iphost\s+2\s+mode\s+dhcp/i.test(block)) {
                   block += `\niphost 2 mode dhcp`;
@@ -180,8 +213,14 @@ quit`;
                 if (!/access-control\s+ping/i.test(block)) {
                   block += `\naccess-control ping mode allowall`;
                 }
+
                 // Ensure quit at end
                 snippet = block + '\nquit\n\n';
+
+                // Add validation warnings as comment at the end
+                if (validationMsg) {
+                  snippet = validationMsg + '\n' + snippet;
+                }
               } else {
                 snippet = '';
               }
@@ -302,7 +341,47 @@ quit`;
     return blockLines;
   }
 
-  // Compare Before and After configurations per SN (structured)
+  // Check which required iphost 1 configs are missing from BEFORE config block
+  function checkMissingIphost1ConfigsBefore(block) {
+    const requiredConfigs = [
+      { regex: /iphost\s+1\s+mode\s+pppoe/i, line: 'iphost 1 mode pppoe' },
+      { regex: /iphost\s+1\s+pppoe\s+username\s+\S+\s+password\s+\S+/i, line: 'iphost 1 pppoe username XXXX password YYYY' },
+      { regex: /iphost\s+1\s+vlan\s+\d+/i, line: 'iphost 1 vlan XXXX' },
+      { regex: /iphost\s+1\s+service\s+Internet/i, line: 'iphost 1 service Internet' },
+      { regex: /iphost\s+1\s+service\s+mode\s+route\s+nat\s+enable\s+cos\s+0\s+portlist\s+\S+/i, line: 'iphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1' }
+    ];
+
+    const missing = [];
+    for (const config of requiredConfigs) {
+      if (!config.regex.test(block)) {
+        missing.push(config.line);
+      }
+    }
+    return missing;
+  }
+
+  // Check which required iphost 1 and iphost 2 configs are missing from AFTER config block
+  function checkMissingIphost1ConfigsAfter(block) {
+    const requiredConfigs = [
+      { regex: /iphost\s+1\s+mode\s+pppoe/i, line: 'iphost 1 mode pppoe' },
+      { regex: /iphost\s+1\s+pppoe\s+username\s+\S+\s+password\s+\S+/i, line: 'iphost 1 pppoe username XXXX password YYYY' },
+      { regex: /iphost\s+1\s+vlan\s+\d+/i, line: 'iphost 1 vlan XXXX' },
+      { regex: /iphost\s+1\s+service\s+Internet/i, line: 'iphost 1 service Internet' },
+      { regex: /iphost\s+1\s+service\s+mode\s+route\s+nat\s+enable\s+cos\s+0\s+portlist\s+\S+/i, line: 'iphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1' },
+      { regex: /iphost\s+2\s+mode\s+dhcp/i, line: 'iphost 2 mode dhcp' },
+      { regex: /iphost\s+2\s+service\s+management/i, line: 'iphost 2 service management' },
+      { regex: /iphost\s+2\s+vlan\s+2989/i, line: 'iphost 2 vlan 2989' }
+    ];
+
+    const missing = [];
+    for (const config of requiredConfigs) {
+      if (!config.regex.test(block)) {
+        missing.push(config.line);
+      }
+    }
+    return missing;
+  }
+
   function performComparison() {
     if (!compareConfigBefore.trim()) {
       alert('Silakan upload config BEFORE terlebih dahulu');
@@ -312,18 +391,17 @@ quit`;
       alert('Silakan upload config AFTER terlebih dahulu');
       return;
     }
-
-    // Extract SNs from before config (username list)
-    const beforeLines = compareConfigBefore.split(/\r?\n/);
-    const snMatches = [];
-    for (let i = 0; i < beforeLines.length; i++) {
-      const match = beforeLines[i].match(/iphost\s+1\s+pppoe\s+username\s+(\S+)/i);
-      if (match) snMatches.push(match[1]);
+    if (!compareSNList.trim()) {
+      alert('Silakan masukkan daftar SN di text area');
+      return;
     }
 
+    // Extract SNs from text area input
+    const snMatches = compareSNList.split('\n').map(sn => sn.trim()).filter(sn => sn.length > 0);
+
     if (snMatches.length === 0) {
-      alert('Tidak ada SN yang ditemukan di config BEFORE');
-      setCompareResult('Tidak ada SN yang ditemukan di config BEFORE');
+      alert('Tidak ada SN yang ditemukan di text area');
+      setCompareResult('Tidak ada SN yang ditemukan di text area');
       setCompareResultsData([]);
       return;
     }
@@ -338,6 +416,17 @@ quit`;
       const afterBlock = extractSNConfig(sn, compareConfigAfter) || [];
 
       const header = beforeBlock.length > 0 ? beforeBlock[0] : null; // gpon-onu header
+      const beforeBlockStr = beforeBlock.join('\n');
+      const afterBlockStr = afterBlock.join('\n');
+
+      // Check for missing iphost 1 configs in before and after
+      const missingInBefore = checkMissingIphost1ConfigsBefore(beforeBlockStr);
+      const missingInAfter = checkMissingIphost1ConfigsAfter(afterBlockStr);
+
+      // Determine before status
+      const beforeStatus = missingInBefore.length === 0 ? 'OK' : 'NOK';
+      // Determine after status
+      const afterStatus = missingInAfter.length === 0 ? 'OK' : 'NOK';
 
       // missing = lines in beforeBlock (excluding header) not present in afterBlock
       const missingLines = [];
@@ -353,9 +442,21 @@ quit`;
         if (!beforeBlock.includes(line) && !isAllowedNewLine(line)) unexpected.push(line);
       }
 
-      const status = (missingLines.length === 0 && unexpected.length === 0) ? 'Sesuai' : 'GAGAL';
+      const status = (beforeStatus === 'OK' && afterStatus === 'OK' && missingLines.length === 0 && unexpected.length === 0) ? 'OK' : 'NOK';
 
-      data.push({ sn, header, beforeBlock, afterBlock, missingLines, unexpected, status });
+      data.push({ 
+        sn, 
+        header, 
+        beforeBlock, 
+        afterBlock, 
+        beforeStatus,
+        afterStatus,
+        missingInBefore,
+        missingInAfter,
+        missingLines, 
+        unexpected, 
+        status 
+      });
     }
 
     setCompareResultsData(data);
@@ -368,28 +469,41 @@ quit`;
     const data = dataArg || compareResultsData || [];
     const lines = [];
     for (const item of data) {
-      if (mode === 'failed' && item.status !== 'GAGAL') continue;
+      if (mode === 'failed' && item.beforeStatus === 'OK' && item.afterStatus === 'OK') continue;
 
-      if (item.status === 'Sesuai') {
-        lines.push(`SN : ${item.sn} - Sesuai`);
-        if (item.afterBlock && item.afterBlock.length) {
-          lines.push(item.afterBlock.join('\n'));
-        }
-        lines.push('');
-      } else {
-        lines.push(`SN : ${item.sn} - GAGAL`);
-        if (item.missingLines && item.missingLines.length) {
-          lines.push('Missing Config:');
-          if (item.header) lines.push(item.header);
-          item.missingLines.forEach(l => lines.push(`  ${l}`));
-          lines.push('');
-        }
-        if (item.unexpected && item.unexpected.length) {
-          lines.push('Extra Config (tidak diizinkan):');
-          item.unexpected.forEach(l => lines.push(`  ${l}`));
-          lines.push('');
+      lines.push(`SN : ${item.sn}`);
+      
+      // Show BEFORE status with emoji
+      const beforeEmoji = item.beforeStatus === 'OK' ? '✅' : '❌';
+      lines.push(`Before : ${beforeEmoji} ${item.beforeStatus}`);
+      if (item.beforeStatus === 'NOK' && item.missingInBefore.length > 0) {
+        lines.push('Missing config:');
+        if (item.header) lines.push(item.header);
+        item.missingInBefore.forEach(l => lines.push(l));
+      }
+      
+      // Show AFTER status with emoji
+      const afterEmoji = item.afterStatus === 'OK' ? '✅' : '❌';
+      lines.push(`After : ${afterEmoji} ${item.afterStatus}`);
+      if (item.afterStatus === 'NOK' && item.missingInAfter.length > 0) {
+        lines.push('Missing config:');
+        if (item.header) lines.push(item.header);
+        
+        // Check if any iphost 2 config is missing
+        const hasIphost2Missing = item.missingInAfter.some(l => /^iphost\s+2/i.test(l));
+        
+        // Add all missing configs
+        item.missingInAfter.forEach(l => lines.push(l));
+        
+        // If iphost 2 is missing, also add access-control configs
+        if (hasIphost2Missing) {
+          lines.push('access-control http mode allowall');
+          lines.push('access-control https mode allowall');
+          lines.push('access-control ping mode allowall');
         }
       }
+      
+      lines.push('');
     }
 
     setCompareResult(lines.join('\n'));
@@ -496,6 +610,44 @@ quit`;
       alert('Gagal menyalin ke clipboard');
     }
   };
+
+  // Validate iphost 1 configuration for GPON-ONU mode
+  function validateIphost1Config(onuBlock) {
+    const issues = [];
+    const warnings = [];
+
+    // Check iphost 1 mode pppoe
+    const hasModePppoe = /iphost\s+1\s+mode\s+pppoe/i.test(onuBlock);
+    if (!hasModePppoe) {
+      issues.push('⚠️ iphost 1 mode pppoe TIDAK DITEMUKAN - Akan ditambahkan');
+    }
+
+    // Check iphost 1 pppoe username and password (format: iphost 1 pppoe username XXX password YYY)
+    const hasPppoeUserPass = /iphost\s+1\s+pppoe\s+username\s+\S+\s+password\s+\S+/i.test(onuBlock);
+    if (!hasPppoeUserPass) {
+      warnings.push('❌ USER PASS TIDAK ADA DI CONFIG CEK ULANG');
+    }
+
+    // Check iphost 1 vlan
+    const vlanMatch = onuBlock.match(/iphost\s+1\s+vlan\s+(\d+)/i);
+    if (!vlanMatch) {
+      warnings.push('❌ VLAN GAADA');
+    }
+
+    // Check iphost 1 service Internet
+    const hasServiceInternet = /iphost\s+1\s+service\s+Internet/i.test(onuBlock);
+    if (!hasServiceInternet) {
+      issues.push('⚠️ iphost 1 service Internet TIDAK DITEMUKAN - Akan ditambahkan');
+    }
+
+    // Check iphost 1 service mode route nat enable cos 0 portlist
+    const hasServiceMode = /iphost\s+1\s+service\s+mode\s+route\s+nat\s+enable\s+cos\s+0\s+portlist\s+\S+/i.test(onuBlock);
+    if (!hasServiceMode) {
+      issues.push('⚠️ iphost 1 service mode route nat enable cos 0 portlist TIDAK DITEMUKAN - Akan ditambahkan');
+    }
+
+    return { issues, warnings };
+  }
 
   // Parse uploaded device config for a given SN (PPPoE username)
   function parseConfigForSN(sn, cfg) {
@@ -619,11 +771,35 @@ quit`;
       return;
     }
 
+    // Validate iphost 1 configuration
+    const validation = validateIphost1Config(res.onuBlock);
+    let validationOutput = '';
+    if (validation.warnings.length > 0) {
+      validationOutput = validation.warnings.join('\n') + '\n\n';
+    }
+
     // Build the combined config snippet
     const iface = `interface gpon-onu ${res.S}/${res.P}/${res.ID}\nline-profile-name ${res.lineProfileFound}\nservice-profile-name ACS-v2\nquit\n`;
 
-    // Start from minimal saved config (header + iphost 1 lines)
-    let full = `${iface}\n${res.minimalSavedConfig.replace(/\r/g,'')}\n`;
+    // Start from minimal saved config and apply fixes
+    let block = res.minimalSavedConfig.replace(/\r/g,'');
+
+    // Add iphost 1 mode pppoe if missing
+    if (!/iphost\s+1\s+mode\s+pppoe/i.test(block)) {
+      block = 'iphost 1 mode pppoe\n' + block;
+    }
+
+    // Add iphost 1 service Internet if missing
+    if (!/iphost\s+1\s+service\s+Internet/i.test(block)) {
+      block += `\niphost 1 service Internet`;
+    }
+
+    // Add iphost 1 service mode route nat enable... if missing
+    if (!/iphost\s+1\s+service\s+mode\s+route\s+nat\s+enable\s+cos\s+0\s+portlist\s+\S+/i.test(block)) {
+      block += `\niphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1`;
+    }
+
+    let full = `${iface}\n${block}\n`;
 
     // Always append iphost 2 and access-control lines (user requested these be added)
     full += `iphost 2 mode dhcp\n`;
@@ -636,6 +812,11 @@ quit`;
 
     // Ensure trailing quit
     full = full.trimEnd() + `\nquit\n`;
+
+    // Add validation warnings at the beginning
+    if (validationOutput) {
+      full = validationOutput + full;
+    }
 
     setOutput(full);
 
@@ -717,9 +898,34 @@ quit`;
       throw new Error(`${sn}: LINEPROFILE BELUM READY`);
     }
 
+    // Validate iphost 1 configuration
+    const validation = validateIphost1Config(res.onuBlock);
+    let validationMsg = '';
+    if (validation.warnings.length > 0) {
+      validationMsg = validation.warnings.join('\n') + '\n\n';
+    }
+
     const iface = `interface gpon-onu ${res.S}/${res.P}/${res.ID}\nline-profile-name ${res.lineProfileFound}\nservice-profile-name ACS-v2\nquit\n`;
 
-    let full = `${iface}\n${res.minimalSavedConfig.replace(/\r/g,'')}\n`;
+    // Start with minimalSavedConfig and apply fixes
+    let block = res.minimalSavedConfig.replace(/\r/g,'');
+
+    // Add iphost 1 mode pppoe if missing
+    if (!/iphost\s+1\s+mode\s+pppoe/i.test(block)) {
+      block = 'iphost 1 mode pppoe\n' + block;
+    }
+
+    // Add iphost 1 service Internet if missing
+    if (!/iphost\s+1\s+service\s+Internet/i.test(block)) {
+      block += `\niphost 1 service Internet`;
+    }
+
+    // Add iphost 1 service mode route nat enable... if missing
+    if (!/iphost\s+1\s+service\s+mode\s+route\s+nat\s+enable\s+cos\s+0\s+portlist\s+\S+/i.test(block)) {
+      block += `\niphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1`;
+    }
+
+    let full = `${iface}\n${block}\n`;
     full += `iphost 2 mode dhcp\n`;
     full += `iphost 2 service management\n`;
     full += `iphost 2 vlan 2989\n`;
@@ -727,6 +933,11 @@ quit`;
     full += `access-control https mode allowall\n`;
     full += `access-control ping mode allowall\n`;
     full = full.trimEnd() + `\nquit\n`;
+
+    // Add validation warnings at the beginning
+    if (validationMsg) {
+      full = validationMsg + full;
+    }
 
     return full;
   }
@@ -859,6 +1070,13 @@ quit`;
 
   return (
     <div className={resolvedDark ? "dark" : ""}>
+      {/* Warning Banner */}
+      {showBanner && (
+        <WarningBanner 
+          onClose={handleBannerClose}
+        />
+      )}
+      
       <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-6">
         {/* HEADER */}
         <div className="max-w-7xl mx-auto flex justify-between items-center mb-6">
@@ -978,8 +1196,8 @@ quit`;
               className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-slate-950"
             >
               <option value="single">Single ACS</option>
-              <option value="multiple" disabled>(Maintenance)Multiple ACS</option>
-              <option value="compare" disabled>(Maintenance)Compare Before After</option>
+              <option value="multiple" >Multiple ACS</option>
+              <option value="compare" >Compare Before After</option>
             </select>
             {mode === "compare" && (
               <div className="mt-3">
