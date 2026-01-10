@@ -134,6 +134,8 @@ access-control https mode allowall
 
 access-control ping mode allowall
 
+access-control telnet mode blockall
+
 end
 
 w s

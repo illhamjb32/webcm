@@ -119,9 +119,11 @@ iphost 1 service mode route nat enable cos 0 portlist 1,2 ssidlist 1
 iphost 2 mode dhcp
 iphost 2 service management
 iphost 2 vlan 2989
-access-control http mode allowall
-access-control https mode allowall
-access-control ping mode allowall
+
+access-control http mode allowlan
+access-control telnet mode blockall
+access-control ping mode allowlan
+access-control https mode allowlan
 
 quit`;
 
@@ -205,13 +207,16 @@ quit`;
                   block += `\niphost 2 vlan 2989`;
                 }
                 if (!/access-control\s+http/i.test(block)) {
-                  block += `\naccess-control http mode allowall`;
+                  block += `\naccess-control http mode allowlan`;
                 }
                 if (!/access-control\s+https/i.test(block)) {
-                  block += `\naccess-control https mode allowall`;
+                  block += `\naccess-control telnet mode blockall`;
                 }
                 if (!/access-control\s+ping/i.test(block)) {
-                  block += `\naccess-control ping mode allowall`;
+                  block += `\naccess-control ping mode allowlan`;
+                }
+                 if (!/access-control\s+ping/i.test(block)) {
+                  block += `\naccess-control https mode allowlan`;
                 }
 
                 // Ensure quit at end
@@ -497,9 +502,10 @@ quit`;
         
         // If iphost 2 is missing, also add access-control configs
         if (hasIphost2Missing) {
-          lines.push('access-control http mode allowall');
-          lines.push('access-control https mode allowall');
-          lines.push('access-control ping mode allowall');
+          lines.push('access-control http mode allowlan');
+          lines.push('access-control telnet mode blockall');
+          lines.push('access-control ping mode allowlan');
+          lines.push('access-control https mode allowlan');
         }
       }
       
@@ -805,11 +811,10 @@ quit`;
     full += `iphost 2 mode dhcp\n`;
     full += `iphost 2 service management\n`;
     full += `iphost 2 vlan 2989\n`;
-    full += `access-control http mode allowall\n`;
-    full += `access-control https mode allowall\n`;
-    // Note: using exact 'allowal' if user typed that; using 'allowal' per request
-    full += `access-control ping mode allowall\n`;
-
+    full += `access-control http mode allowlan\n`;
+    full += `access-control telnet mode blockall\n`;
+    full += `access-control ping mode allowlan\n`;
+    full += `access-control https mode allowlan\n`;
     // Ensure trailing quit
     full = full.trimEnd() + `\nquit\n`;
 
@@ -929,9 +934,10 @@ quit`;
     full += `iphost 2 mode dhcp\n`;
     full += `iphost 2 service management\n`;
     full += `iphost 2 vlan 2989\n`;
-    full += `access-control http mode allowall\n`;
-    full += `access-control https mode allowall\n`;
-    full += `access-control ping mode allowall\n`;
+    full += `access-control http mode allowlan\n`;
+    full += `access-control telnet mode blockall\n`;
+    full += `access-control ping mode allowlan\n`;
+    full += `access-control https mode allowlan\n`;
     full = full.trimEnd() + `\nquit\n`;
 
     // Add validation warnings at the beginning
@@ -1005,13 +1011,16 @@ quit`;
                 block += `\niphost 2 vlan 2989`;
               }
               if (!/access-control\s+http/i.test(block)) {
-                block += `\naccess-control http mode allowall`;
+                block += `\naccess-control http mode allowlan`;
               }
               if (!/access-control\s+https/i.test(block)) {
-                block += `\naccess-control https mode allowall`;
+                block += `\naccess-control telnet mode blockall`;
               }
               if (!/access-control\s+ping/i.test(block)) {
-                block += `\naccess-control ping mode allowall`;
+                block += `\naaccess-control ping mode allowlan`;
+              }
+               if (!/access-control\s+ping/i.test(block)) {
+                block += `\naccess-control https mode allowlan`;
               }
               // Ensure quit at end
               snippet = block + '\nquit\n\n';
