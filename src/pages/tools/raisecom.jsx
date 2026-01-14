@@ -122,7 +122,7 @@ iphost 2 vlan 2989
 
 access-control http mode allowlan
 access-control telnet mode blockall
-access-control ping mode allowlan
+access-control ping mode allowwan
 access-control https mode allowlan
 
 quit`;
@@ -209,13 +209,13 @@ quit`;
                 if (!/access-control\s+http/i.test(block)) {
                   block += `\naccess-control http mode allowlan`;
                 }
-                if (!/access-control\s+https/i.test(block)) {
+                if (!/access-control\s+telnet/i.test(block)) {
                   block += `\naccess-control telnet mode blockall`;
                 }
                 if (!/access-control\s+ping/i.test(block)) {
-                  block += `\naccess-control ping mode allowlan`;
+                  block += `\naccess-control ping mode allowwan`;
                 }
-                 if (!/access-control\s+ping/i.test(block)) {
+                 if (!/access-control\s+https/i.test(block)) {
                   block += `\naccess-control https mode allowlan`;
                 }
 
@@ -504,7 +504,7 @@ quit`;
         if (hasIphost2Missing) {
           lines.push('access-control http mode allowlan');
           lines.push('access-control telnet mode blockall');
-          lines.push('access-control ping mode allowlan');
+          lines.push('access-control ping mode allowwan');
           lines.push('access-control https mode allowlan');
         }
       }
@@ -723,8 +723,9 @@ quit`;
     const hasIphost2Service = /iphost\s+2\s+service\s+management/i.test(onuBlock);
     const hasIphost2Vlan = /iphost\s+2\s+vlan\s+2989/i.test(onuBlock);
     const hasAccessHttp = /access-control\s+http\s+mode/i.test(onuBlock);
-    const hasAccessHttps = /access-control\s+https\s+mode/i.test(onuBlock);
+    const hasAccessTelnet = /access-control\s+telnet\s+mode/i.test(onuBlock);
     const hasAccessPing = /access-control\s+ping\s+mode/i.test(onuBlock);
+    const hasAccessHttps = /access-control\s+https\s+mode/i.test(onuBlock);
 
     // Determine expected line-profile name for this VLAN
     const expectedLineProfile = iphost1Vlan ? `NEWAP1.${iphost1Vlan}.ACS` : null;
@@ -751,6 +752,7 @@ quit`;
       hasIphost2Service,
       hasIphost2Vlan,
       hasAccessHttp,
+      hasAccessTelnet,
       hasAccessHttps,
       hasAccessPing
     };
@@ -813,7 +815,7 @@ quit`;
     full += `iphost 2 vlan 2989\n`;
     full += `access-control http mode allowlan\n`;
     full += `access-control telnet mode blockall\n`;
-    full += `access-control ping mode allowlan\n`;
+    full += `access-control ping mode allowwan\n`;
     full += `access-control https mode allowlan\n`;
     // Ensure trailing quit
     full = full.trimEnd() + `\nquit\n`;
@@ -936,7 +938,7 @@ quit`;
     full += `iphost 2 vlan 2989\n`;
     full += `access-control http mode allowlan\n`;
     full += `access-control telnet mode blockall\n`;
-    full += `access-control ping mode allowlan\n`;
+    full += `access-control ping mode allowwan\n`;
     full += `access-control https mode allowlan\n`;
     full = full.trimEnd() + `\nquit\n`;
 
@@ -1013,13 +1015,13 @@ quit`;
               if (!/access-control\s+http/i.test(block)) {
                 block += `\naccess-control http mode allowlan`;
               }
-              if (!/access-control\s+https/i.test(block)) {
+              if (!/access-control\s+telnet/i.test(block)) {
                 block += `\naccess-control telnet mode blockall`;
               }
               if (!/access-control\s+ping/i.test(block)) {
-                block += `\naaccess-control ping mode allowlan`;
+                block += `\naaccess-control ping mode allowwan`;
               }
-               if (!/access-control\s+ping/i.test(block)) {
+               if (!/access-control\s+https/i.test(block)) {
                 block += `\naccess-control https mode allowlan`;
               }
               // Ensure quit at end
