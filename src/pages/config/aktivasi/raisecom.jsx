@@ -237,13 +237,17 @@ export default function RaisecomAktivasi() {
     if (selectedMode === MODES.V2) {
       const tpl = `config
 
-interface gpon-olt ${SloPor}
+int gpon-olt ${SloPor}
 
-create gpon-onu sn ${sn} line-profile-name ${lineProfileId} service profile-name ACS-v2
+create gpon-onu ${ontId} sn ${sn} line-profile-id ${lineProfileId} service-profile-id 1
 
 quit
 
-config
+int gpon-onu ${SloPorOnt}
+
+desc ${sid}-${nama}
+
+quit
 
 gpon-onu ${SloPorOnt}
 
