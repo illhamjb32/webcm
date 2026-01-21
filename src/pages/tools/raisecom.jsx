@@ -63,6 +63,39 @@ export default function RaisecomMigrasi() {
     setShowBanner(false);
   };
 
+  // ===== FIND BEST LINE PROFILE FROM CONFIG =====
+  function findBestLineProfile(cfg, vlan) {
+    if (!cfg || !vlan) return null;
+
+    // Find all NEWAP patterns for this VLAN: NEWAP1.2910.ACS, NEWAP2.2910.ACS, etc.
+    const regex = new RegExp(`(NEWAP\\d+)\\.${vlan}\\.ACS`, 'gi');
+    const matches = [];
+    let match;
+    while ((match = regex.exec(cfg)) !== null) {
+      matches.push(match[1]); // e.g., "NEWAP1", "NEWAP2"
+    }
+
+    if (matches.length === 0) return null;
+
+    // Extract numbers and find the highest
+    const numbers = matches.map(m => parseInt(m.replace('NEWAP', '')));
+    const maxNumber = Math.max(...numbers);
+    
+    return `NEWAP${maxNumber}.${vlan}.ACS`;
+  }
+
+  // ===== DETERMINE EXPECTED LINE PROFILE NAME FOR VLAN =====
+  function getLineProfileForVlan(cfg, vlan) {
+    if (!vlan) return null;
+
+    // Try to find the best NEWAP version from config
+    const best = findBestLineProfile(cfg, vlan);
+    if (best) return best;
+
+    // Fallback: assume NEWAP1 if not found in config
+    return `NEWAP1.${vlan}.ACS`;
+  }
+
   // ===== VALIDATION + PARSER =====
   function generateConfig() {
     if (mode === "single") {
@@ -727,8 +760,8 @@ quit`;
     const hasAccessPing = /access-control\s+ping\s+mode/i.test(onuBlock);
     const hasAccessHttps = /access-control\s+https\s+mode/i.test(onuBlock);
 
-    // Determine expected line-profile name for this VLAN
-    const expectedLineProfile = iphost1Vlan ? `NEWAP1.${iphost1Vlan}.ACS` : null;
+    // Determine expected line-profile name for this VLAN using smart detection
+    const expectedLineProfile = iphost1Vlan ? getLineProfileForVlan(cfg, iphost1Vlan) : null;
 
     // Search for a gpon-onu-line-profile block that defines that name
     let lineProfileFound = null;

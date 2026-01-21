@@ -45,7 +45,8 @@ export default function FiberhomeAktivasi() {
 
   // Modes + OLT types
   const MODES = { V2: "v2acs", V1: "v1", CEK_IP: "cekip", REDAMAN: "cekredaman", HAPUS: "hapus" };
-  const [mode, setMode] = useState(MODES.V2);
+  const PENGECEKAN_MODES = { CEK_ONU: "cekonu", CEK_REDAMAN: "cek_redaman_pengecekan", CEK_IP: "cek_ip_pengecekan", REBOOT: "reboot" };
+  const [selectedOption, setSelectedOption] = useState(MODES.V2);
   const TYPES = { AN6000: "an6000", AN5116: "an5116" };
   const [oltType, setOltType] = useState(TYPES.AN6000);
   // Reset form inputs
@@ -62,8 +63,24 @@ export default function FiberhomeAktivasi() {
     setVlan("");
     setErrors({});
     setOutput("");
-    setMode(MODES.V2);          // optional: reset mode back to V2
+    setSelectedOption(MODES.V2);          // optional: reset mode back to V2
     setOltType(TYPES.AN6000);   // optional: reset OLT type back to AN6000
+  }
+
+  // Load dummy data
+  function loadDummyData() {
+    setSn("FHTT9612abf0");
+    setFrame("1");
+    setSlot("1");
+    setPort("1");
+    setOntId("1");
+    setTypeOnt("HG6243C");
+    setSid("123456789");
+    setNama("Test.Pelanggan");
+    setVlan("2923");
+    setPassword(todayDefault);
+    setSelectedOption(MODES.V2);
+    setOltType(TYPES.AN5116);
   }
 
   // Validation
@@ -84,6 +101,21 @@ export default function FiberhomeAktivasi() {
     return Object.keys(e).length === 0;
   }
 
+  // Auto-update config when selectedOption changes
+  useEffect(() => {
+    const isAktivasi = Object.values(MODES).includes(selectedOption);
+
+    if (isAktivasi) {
+      if (requireAll()) {
+        showConfig(selectedOption);
+      }
+    } else {
+      if (slot && port && ontId) {
+        generatePengecekanConfig(selectedOption);
+      }
+    }
+  }, [selectedOption, sn, frame, slot, port, ontId, typeOnt, sid, nama, vlan, password, oltType]);
+
   // Output + copy
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
@@ -103,47 +135,62 @@ export default function FiberhomeAktivasi() {
     return /^fhtt/i.test(raw) ? "FHTT" + raw.slice(4).toLowerCase() : raw;
   }
 
-  // Generate
-  function showConfig() {
-    const needsFull = mode === MODES.V2 || mode === MODES.V1 || mode === MODES.REDAMAN || mode === MODES.CEK_IP || mode === MODES.HAPUS;
-    if (needsFull && !requireAll()) return;
-
+  // Generate pengecekan config
+  function generatePengecekanConfig(penMode) {
     const snSafe = normalizeSn(sn);
 
+    if (oltType === TYPES.AN5116) {
+      if (penMode === PENGECEKAN_MODES.CEK_ONU) {
+        const tpl = [
+          "cd onu",
+          `show onu-info by ${snSafe}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (penMode === PENGECEKAN_MODES.CEK_REDAMAN) {
+        const tpl = [
+          "cd onu",
+          `show onu opticalpower-info phy-id ${snSafe}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (penMode === PENGECEKAN_MODES.CEK_IP) {
+        const tpl = [
+          "show wan",
+          `info slot ${slot} pon ${port} onu ${ontId}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (penMode === PENGECEKAN_MODES.REBOOT) {
+        const tpl = [
+          "reset default",
+          `cfg slot ${slot} pon ${port} onu ${ontId} default`,
+          "cfg",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+    }
+
     if (oltType === TYPES.AN6000) {
-      if (mode === MODES.V2) {
+      if (penMode === PENGECEKAN_MODES.CEK_ONU) {
         const tpl = [
           "config",
-          `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
-          `interface pon ${FSP}`,
-          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
-          `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
-          `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
-          `onu remote-manage-cfg ${ontId} tr069 enable acs-url http://10.14.4.250:10301 acl-user icon acl-pswd 1c0nPlus!BNG2019`,
-          "quit",
-          "save",
+          `show onu authorization-info phy-id ${snSafe}`,
         ].join("\n\n");
         setOutput(tpl);
         return;
       }
 
-      if (mode === MODES.V1) {
+      if (penMode === PENGECEKAN_MODES.CEK_REDAMAN) {
         const tpl = [
           "config",
-          `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
-          `interface pon ${FSP}`,
-          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
-          `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
-          `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
-          "quit",
-          "save",
-        ].join("\n\n");
-        setOutput(tpl);
-        return;
-      }
-
-      if (mode === MODES.REDAMAN) {
-        const tpl = [
           `interface pon ${FSP}`,
           `show onu optical-info ${ontId}`,
         ].join("\n\n");
@@ -151,8 +198,9 @@ export default function FiberhomeAktivasi() {
         return;
       }
 
-      if (mode === MODES.CEK_IP) {
+      if (penMode === PENGECEKAN_MODES.CEK_IP) {
         const tpl = [
+          "config",
           `interface pon ${FSP}`,
           `show onu ${ontId} wan-info`,
         ].join("\n\n");
@@ -160,26 +208,107 @@ export default function FiberhomeAktivasi() {
         return;
       }
 
-      if (mode === MODES.HAPUS) {
+      if (penMode === PENGECEKAN_MODES.REBOOT) {
+        const tpl = [
+          "config",
+          `interface pon ${FSP}`,
+          `onu-reboot ${ontId}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+    }
+  }
+
+  // Generate
+  function showConfig(selectedMode) {
+    const needsFull = selectedMode === MODES.V2 || selectedMode === MODES.V1 || selectedMode === MODES.REDAMAN || selectedMode === MODES.CEK_IP || selectedMode === MODES.HAPUS;
+    if (needsFull && !requireAll()) return;
+
+    // Handle pengecekan modes
+    if (Object.values(PENGECEKAN_MODES).includes(selectedMode)) {
+      if (!slot || !port || !ontId) {
+        setErrors({ slot: "Slot/Port/ONT ID wajib untuk pengecekan" });
+        return;
+      }
+      generatePengecekanConfig(selectedMode);
+      return;
+    }
+
+    const snSafe = normalizeSn(sn);
+
+    if (oltType === TYPES.AN6000) {
+      if (selectedMode === MODES.V2) {
+        const tpl = [
+          "config",
+          `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
+          `interface pon ${FSP}`,
+          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `onu ipv6-wan-cfg 4 index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
+          `onu remote-manage-cfg ${ontId} tr069 enable acs-url http://192.168.30.5:5000/acs/ acl-user plniconplus acl-pswd PlnIconPlus!2025 inform enable interval 900 port 5000 user plniconplus pswd PlnIconPlus!2025`,
+          "quit",
+          "save",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (selectedMode === MODES.V1) {
+        const tpl = [
+          "config",
+          `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
+          `interface pon ${FSP}`,
+          `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
+          `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
+          "quit",
+          "save",
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (selectedMode === MODES.REDAMAN) {
+        const tpl = [
+          "config",
+          `interface pon ${FSP}`,
+          `show onu optical-info ${ontId}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (selectedMode === MODES.CEK_IP) {
+        const tpl = [
+          "config",
+          `interface pon ${FSP}`,
+          `show onu ${ontId} wan-info`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (selectedMode === MODES.HAPUS) {
         setOutput(`no whitelist slot ${slot} pon ${port} onu ${ontId}`);
         return;
       }
     }
 
     if (oltType === TYPES.AN5116) {
-      if (mode === MODES.V2) {
+      if (selectedMode === MODES.V2) {
         const tpl = [
           "cd onu",
           `set whitelist phy_addr address ${snSafe} password fiberhome action add slot ${slot} pon ${port} onu ${ontId} type ${typeOnt}`,
           "cd lan",
           `set wancfg slot ${slot} ${port} ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password}  0 auto entries 4 fe1 fe2 ssid1 ssid5`,
           `set wancfg slot ${slot} ${port} ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
-          `set wancfg slot ${slot} ${port} ${ontId} index 2 mode tr069 type route 2989 cos nat disable qos disable dsp dhcp`,
+          `set wancfg slot ${slot} pon ${port} onu ${ontId} index 2 mode tr069 type route 2989 cos nat disable qos disable dsp dhcp`,
           `apply wancfg slot ${slot} ${port} ${ontId}`,
           "cd /",
           "",
           "cd onu",
-          `set remote_manage_cfg slot ${slot} pon ${port} onu ${ontId} tr069 enable acs_url http://10.14.4.250:10301  acl_user icon acl_pswd 1c0nPlus!BNG2019`,
+          `set remote_manage_cfg slot ${slot} pon ${port} onu ${ontId} tr069 enable acs_url http://192.168.30.5:5000/acs/ acl_user plniconplus acl_pswd PlnIconPlus!2025 inform enable interval 900 port 5000 user plniconplus pswd PlnIconPlus!2025`,
           "",
           "save",
         ].join("\n\n");
@@ -187,7 +316,7 @@ export default function FiberhomeAktivasi() {
         return;
       }
 
-      if (mode === MODES.V1) {
+      if (selectedMode === MODES.V1) {
         const tpl = [
           "cd onu",
           "",
@@ -208,22 +337,25 @@ export default function FiberhomeAktivasi() {
         return;
       }
 
-      if (mode === MODES.REDAMAN) {
-        setOutput(`show onu opticalpower-info phy-id ${snSafe}`);
-        return;
-      }
-
-      if (mode === MODES.CEK_IP) {
+      if (selectedMode === MODES.REDAMAN) {
         const tpl = [
           "cd onu",
-          `show wan_info slot ${slot} pon ${port} on ${ontId}`,
-          "cd /",
+          `show onu opticalpower-info phy-id ${snSafe}`,
         ].join("\n\n");
         setOutput(tpl);
         return;
       }
 
-      if (mode === MODES.HAPUS) {
+      if (selectedMode === MODES.CEK_IP) {
+        const tpl = [
+          "show wan",
+          `info slot ${slot} pon ${port} onu ${ontId}`,
+        ].join("\n\n");
+        setOutput(tpl);
+        return;
+      }
+
+      if (selectedMode === MODES.HAPUS) {
         setOutput(`no whitelist slot ${slot} pon ${port} onu ${ontId}`);
         return;
       }
@@ -246,7 +378,15 @@ export default function FiberhomeAktivasi() {
         <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Card 1: Input */}
           <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
-            <h2 className="text-sm font-semibold mb-4 text-slate-700 dark:text-slate-200">Input Data</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Input Data</h2>
+              <button
+                className="rounded-lg bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs"
+                onClick={loadDummyData}
+              >
+                Data Dummy
+              </button>
+            </div>
 
             <Field
               label="SN ONT"
@@ -275,7 +415,7 @@ export default function FiberhomeAktivasi() {
 
             <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="10" />
 
-            <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={showConfig}>Show Config</button>
+            <button className="mt-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2" onClick={() => showConfig(selectedOption)}>Show Config</button>
             <button
               className="mt-2 w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
               onClick={resetForm}
@@ -287,9 +427,7 @@ export default function FiberhomeAktivasi() {
           </section>
 
           {/* Card 2: Mode + OLT type */}
-          <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
-            <h2 className="text-sm font-semibold mb-4 text-slate-700 dark:text-slate-200">Mode</h2>
-
+          <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm overflow-y-auto flex flex-col">
             <div className="mb-4">
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Tipe OLT</label>
               <select value={oltType} onChange={(e) => setOltType(e.target.value)} className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950/60 px-3 py-2 text-sm">
@@ -298,11 +436,26 @@ export default function FiberhomeAktivasi() {
               </select>
             </div>
 
-            <Radio name="mode" label="Config V2 ACS" checked={mode === MODES.V2} onChange={() => setMode(MODES.V2)} />
-            <Radio name="mode" label="Config V1" checked={mode === MODES.V1} onChange={() => setMode(MODES.V1)} />
-            <Radio name="mode" label="Cek IP" checked={mode === MODES.CEK_IP} onChange={() => setMode(MODES.CEK_IP)} />
-            <Radio name="mode" label="Cek Redaman" checked={mode === MODES.REDAMAN} onChange={() => setMode(MODES.REDAMAN)} />
-            <Radio name="mode" label="Hapus Config" checked={mode === MODES.HAPUS} onChange={() => setMode(MODES.HAPUS)} />
+            <div>
+              <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Aktivasi</h2>
+              <div className="space-y-1.5 mb-4 pb-4 border-b border-slate-300 dark:border-slate-700">
+                <Radio name="option" label="Config V2 ACS" checked={selectedOption === MODES.V2} onChange={() => setSelectedOption(MODES.V2)} />
+                <Radio name="option" label="Config V1" checked={selectedOption === MODES.V1} onChange={() => setSelectedOption(MODES.V1)} />
+                <Radio name="option" label="Cek IP" checked={selectedOption === MODES.CEK_IP} onChange={() => setSelectedOption(MODES.CEK_IP)} />
+                <Radio name="option" label="Cek Redaman" checked={selectedOption === MODES.REDAMAN} onChange={() => setSelectedOption(MODES.REDAMAN)} />
+                <Radio name="option" label="Hapus Config" checked={selectedOption === MODES.HAPUS} onChange={() => setSelectedOption(MODES.HAPUS)} />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Pengecekan</h2>
+              <div className="space-y-1.5">
+                <Radio name="option" label="Cek ONU" checked={selectedOption === PENGECEKAN_MODES.CEK_ONU} onChange={() => setSelectedOption(PENGECEKAN_MODES.CEK_ONU)} />
+                <Radio name="option" label="Cek Redaman" checked={selectedOption === PENGECEKAN_MODES.CEK_REDAMAN} onChange={() => setSelectedOption(PENGECEKAN_MODES.CEK_REDAMAN)} />
+                <Radio name="option" label="Cek IP" checked={selectedOption === PENGECEKAN_MODES.CEK_IP} onChange={() => setSelectedOption(PENGECEKAN_MODES.CEK_IP)} />
+                <Radio name="option" label="Reboot" checked={selectedOption === PENGECEKAN_MODES.REBOOT} onChange={() => setSelectedOption(PENGECEKAN_MODES.REBOOT)} />
+              </div>
+            </div>
           </section>
 
           {/* Card 3: Output */}

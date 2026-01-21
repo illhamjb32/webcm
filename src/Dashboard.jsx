@@ -240,9 +240,9 @@ export default function Dashboard() {
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
+                 <li>Update Semua Conifg ONT V2</li>
+                 <li>optimasi Config dan Perbaikan bugs</li>
                 <li>Menambahkan Tool - Migrasi ACS untuk Raisecom</li>
-                <li>Dropdown auto close</li>
-                <li>Multiple ACS Beta ready</li>
               </ul>
             </Card>
           </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import wifiIcon from "./assets/wifi.svg";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -76,7 +77,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-blue-600/90 dark:bg-blue-500 flex items-center justify-center shadow-lg">
-                <span className="text-white font-semibold">∞</span>
+                <img src={wifiIcon} alt="WiFi Icon" className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight">Welcome back</h1>
