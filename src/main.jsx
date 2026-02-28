@@ -16,6 +16,7 @@ import ZTEAktivasi from "./pages/config/aktivasi/zte";
 import FiberhomeAktivasi from "./pages/config/aktivasi/fiberhome";
 import ViberlinkAktivasi from "./pages/config/aktivasi/viberlink";
 import RaisecomMigrasiACS from "./pages/tools/raisecom"
+import ZteMigrasiACS from "./pages/tools/ZTE";
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/dashboard/config/aktivasi/fiberhome" element={<FiberhomeAktivasi />} />
         <Route path="/dashboard/config/aktivasi/viberlink" element={<ViberlinkAktivasi />} />
         <Route path="/dashboard/tools/migrasi-acs/raisecom" element={<RaisecomMigrasiACS />} />
+        <Route path="/dashboard/tools/migrasi-acs/zte" element={<ZteMigrasiACS />} />
       </Routes>
     </HashRouter>
   </React.StrictMode>

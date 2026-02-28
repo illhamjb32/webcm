@@ -132,6 +132,9 @@ export default function Dashboard() {
                         <DropdownLink to="/dashboard/tools/migrasi-acs/raisecom">
                           Raisecom
                         </DropdownLink>
+                        <DropdownLink to="/dashboard/tools/migrasi-acs/zte">
+                          ZTE
+                        </DropdownLink>
                       </Section>
                     </div>
                   )}
@@ -208,7 +211,7 @@ export default function Dashboard() {
                 ))}
 
                 <li className="px-3 pt-2 text-xs font-semibold text-slate-500">
-                  Tools → Migrasi ACS → Raisecom sudah aktif
+                  Tools → Migrasi ACS → Raisecom, ZTE sudah aktif
                 </li>
                 <li>
                   <NavLink
@@ -216,6 +219,14 @@ export default function Dashboard() {
                     className="block px-3 py-2 rounded-xl"
                   >
                     Raisecom
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/dashboard/tools/migrasi-acs/zte"
+                    className="block px-3 py-2 rounded-xl"
+                  >
+                    ZTE
                   </NavLink>
                 </li>
               </ul>
