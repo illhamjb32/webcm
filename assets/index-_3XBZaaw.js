@@ -223,7 +223,7 @@ show gpon-onu information
 show gpon active-onu
 show gpon inactive-onu`;else if(z===U.CEK_RUNNING_CONFIG)H=`show running-config db-onu interface GPON 0/${C}:${g}`;else if(z===U.CEK_REDAMAN_PORT)H=`show interface gPON 0/${C}`;else{B("⚠️ Silakan isi field yang diperlukan untuk pengecekan ini");return}H&&B(H)}function V(z){if(Object.values(ue).includes(z)&&(z===ue.V1||z===ue.REDAMAN||z===ue.CEK_IP)&&!ge()){B("⚠️ Silakan isi semua field yang wajib diisi");return}const H=`${C}/${p}:${g}`;if(z===ue.V1){const je=`Config
 
-interface GPON0/${C}:${p}
+interface GPON0/${p}:${g}
 
 description ${b}-${ee}
 
@@ -231,7 +231,7 @@ quit
 
 Config
 
-interface gpON 0/${C}:${p}
+interface gpON 0/${p}:${g}
 
 gpon onu wan 1 admin-status enable
 
