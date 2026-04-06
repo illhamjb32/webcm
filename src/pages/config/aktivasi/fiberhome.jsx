@@ -244,7 +244,7 @@ export default function FiberhomeAktivasi() {
           `whitelist add phy-id ${snSafe} checkcode fiberhome type ${typeOnt} slot ${slot} pon ${port} onuid ${ontId}`,
           `interface pon ${FSP}`,
           `onu wan-cfg ${ontId} index 1 mode internet type route ${vlan} 0 nat enable qos disable dsp pppoe proxy disable ${snSafe} ${password} 0 auto entries 4 fe1 fe2 ssid1 ssid5`,
-          `onu ipv6-wan-cfg 4 index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
+          `onu ipv6-wan-cfg ${ontId} index 1 ip-stack-mode ipv4 ipv6-src-type slaac prefix-src-type delegate`,
           `onu wan-cfg ${ontId} index 2 mode tr069 type route 2989 5 nat dis qos disable dsp dhcp active enable`,
           `onu remote-manage-cfg ${ontId} tr069 enable acs-url http://192.168.30.5:5000/acs/ acl-user plniconplus acl-pswd PlnIconPlus!2025 inform enable interval 900 port 5000 user plniconplus pswd PlnIconPlus!2025`,
           "quit",

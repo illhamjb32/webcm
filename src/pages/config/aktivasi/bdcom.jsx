@@ -42,7 +42,7 @@ export default function BDCOMAktivasi() {
   }, [todayDefault]);
 
   // Modes
-  const MODES = { V1: "v1", CEK_IP: "cekip", REDAMAN: "cekredaman", HAPUS: "hapus" };
+  const MODES = { V1: "v1", V2: "v2acs", CEK_IP: "cekip", REDAMAN: "cekredaman", HAPUS: "hapus" };
 
   // Pengecekan modes
   const PENGECEKAN_MODES = {
@@ -68,7 +68,7 @@ export default function BDCOMAktivasi() {
   };
 
   // Single unified selected option across both Aktivasi and Pengecekan
-  const [selectedOption, setSelectedOption] = useState(MODES.V1);
+  const [selectedOption, setSelectedOption] = useState(MODES.V2);
   // Reset form inputs
   function resetForm() {
     setSn("");
@@ -206,7 +206,7 @@ export default function BDCOMAktivasi() {
 
   // Build strings
   function showConfig(selectedMode) {
-    const needsFull = Object.values(MODES).includes(selectedMode) && (selectedMode === MODES.V1 || selectedMode === MODES.REDAMAN || selectedMode === MODES.CEK_IP);
+    const needsFull = Object.values(MODES).includes(selectedMode) && (selectedMode === MODES.V1 || selectedMode === MODES.V2 || selectedMode === MODES.REDAMAN || selectedMode === MODES.CEK_IP);
     if (needsFull && !requireAll()) {
       setOutput("⚠️ Silakan isi semua field yang wajib diisi");
       return;
@@ -217,7 +217,7 @@ export default function BDCOMAktivasi() {
     if (selectedMode === MODES.V1) {
       const tpl = `Config
 
-interface GPON0/${slot}:${port}
+interface GPON0/${port}:${ontId}
 
 description ${sid}-${nama}
 
@@ -225,7 +225,7 @@ quit
 
 Config
 
-interface gpON 0/${slot}:${port}
+interface gpON 0/${port}:${ontId}
 
 gpon onu wan 1 admin-status enable
 
@@ -244,6 +244,61 @@ gpon onu wan 1 bind lan1 lan2 ssid1
 gpon onu wan 1 auto-get-dns-address enable
 
 gpon onu wan 1 lan-dhcp enable
+
+quit
+
+write all
+`;
+      setOutput(tpl);
+      return;
+    }
+
+    if (selectedMode === MODES.V2) {
+      const tpl = `Config
+
+interface GPON0/${port}:${ontId}
+
+description ${sid}-${nama}
+
+quit
+
+Config
+
+interface gpoN 0/${port}:${ontId}
+
+gpon onu wan 1 admin-status enable
+
+gpon onu wan 1 nat enable
+
+gpon onu wan 1 service-type internet
+
+gpon onu wan 1 connection-type pppoe
+
+gpon onu wan 1 pppoe username ${username} password ${password}
+
+gpon onu wan 1 tci vlan ${vlan}
+
+gpon onu wan 1 bind lan1 lan2 ssid1
+
+gpon onu wan 1 auto-get-dns-address enable
+
+gpon onu wan 1 lan-dhcp enable
+
+quit
+
+Config
+
+interface gpoN 0/${port}:${ontId}
+
+gpon onu tcont-virtual-port-bind-profile tvbind-default-ACS-v2
+
+gpon onu flow-mapping-profile flow-mapping-default-hgu-ACS-v2
+
+gpon onu veip 1 veip-profile ACS-v2
+
+gpon onu ip-host 2 option dhcp
+
+quit
 
 quit
 
@@ -347,6 +402,7 @@ write all
             <div>
               <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Aktivasi</h2>
               <div className="space-y-1.5 mb-4 pb-4 border-b border-slate-300 dark:border-slate-700">
+                <Radio name="option" label="Config V2 ACS" checked={selectedOption === MODES.V2} onChange={() => setSelectedOption(MODES.V2)} />
                 <Radio name="option" label="Config V1" checked={selectedOption === MODES.V1} onChange={() => setSelectedOption(MODES.V1)} />
                 <Radio name="option" label="Cek IP" checked={selectedOption === MODES.CEK_IP} onChange={() => setSelectedOption(MODES.CEK_IP)} />
                 <Radio name="option" label="Cek Redaman" checked={selectedOption === MODES.REDAMAN} onChange={() => setSelectedOption(MODES.REDAMAN)} />

@@ -46,7 +46,7 @@ export default function Dashboard() {
     { to: "/dashboard/link-kerja", label: "Link Kerja" },
   ];
 
-  const vendors = ["Huawei", "Raisecom", "BDCOM", "ZTE", "Fiberhome", "Viberlink"];
+  const vendors = ["Huawei", "Raisecom", "BDCOM", "ZTE", "Fiberhome"];
 
   // ===== CLOCK (WIB) =====
   const [now, setNow] = useState(Date.now());
@@ -168,6 +168,19 @@ export default function Dashboard() {
                           </DropdownLink>
                         ))}
                       </Section>
+                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <Section title="Open Akses">
+                          <DropdownLink to="/dashboard/config/open-akses/jinde">
+                            JINDE
+                          </DropdownLink>
+                          <DropdownLink to="/dashboard/config/open-akses/moratel">
+                            MORATEL
+                          </DropdownLink>
+                          <DropdownLink to="/dashboard/config/open-akses/viberlink">
+                            Viberlink
+                          </DropdownLink>
+                        </Section>
+                      </div>
                     </div>
                   )}
                 </li>
@@ -229,6 +242,34 @@ export default function Dashboard() {
                     ZTE
                   </NavLink>
                 </li>
+
+                <li className="px-3 pt-2 text-xs font-semibold text-slate-500">
+                  Config → Open Akses
+                </li>
+                <li>
+                  <NavLink
+                    to="/dashboard/config/open-akses/jinde"
+                    className="block px-3 py-2 rounded-xl"
+                  >
+                    JINDE
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/dashboard/config/open-akses/moratel"
+                    className="block px-3 py-2 rounded-xl"
+                  >
+                    MORATEL
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/dashboard/config/open-akses/viberlink"
+                    className="block px-3 py-2 rounded-xl"
+                  >
+                    Viberlink
+                  </NavLink>
+                </li>
               </ul>
             </div>
           )}
@@ -245,15 +286,13 @@ export default function Dashboard() {
             </Card>
 
             <Card title="Info">
-              <p>Tools → Migrasi ACS → Raisecom sudah aktif</p>
+              <p>Infokan Jody Jika Menemukan Typo, Error, Atau Bugs</p>
               <p><b>Pekerjaan Dilakukan Dengan Teliti</b></p>
             </Card>
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
-                 <li>Update Semua Conifg ONT V2</li>
-                 <li>optimasi Config dan Perbaikan bugs</li>
-                <li>Menambahkan Tool - Migrasi ACS untuk Raisecom</li>
+                 <li>Perbaikan typo config fiberhome dan penambahan ACS BDCOM</li>
               </ul>
             </Card>
           </div>

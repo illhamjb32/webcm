@@ -185,7 +185,7 @@ function resetForm() {
     } else if (penMode === PENGECEKAN_MODES.RUN_STATE_BY_DESC && sid) {
       config = `display ont info by-desc ${sid}`;
     } else if (penMode === PENGECEKAN_MODES.CEK_IP_PENG && FraSloPor && ontId) {
-      config = `display ont wan-info ${FraSloPor} ${ontId}`;
+      config = `display ont wan-info ${frame}/${slot} ${port} ${ontId}`;
     } else if (penMode === PENGECEKAN_MODES.CEK_POWER && FraSlo && port && ontId) {
       config = `config\ninterface gpon ${FraSlo}\ndisplay ont optical-info ${port} ${ontId}\ndisplay ont optical-info ${port} all\ndisplay ont info option run-state ${frame} ${slot} ${port} ${ontId}`;
     } else if (penMode === PENGECEKAN_MODES.CEK_GAMAS && frame && slot) {
