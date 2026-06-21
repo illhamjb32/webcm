@@ -239,7 +239,7 @@ export default function RaisecomAktivasi() {
 
 int gpon-olt ${SloPor}
 
-create gpon-onu ${ontId} sn ${sn} line-profile-id ${lineProfileId} service-profile-id 1
+create gpon-onu ${ontId} sn ${sn} line-profile-id ${lineProfileId} service-profile-name ACS-v2
 
 quit
 

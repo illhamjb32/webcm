@@ -261,9 +261,9 @@ ont port route ${port} ${ontId} eth 2 enable
 
 ont ipconfig ${port} ${ontId} ip-index 2 dhcp vlan 2989 priority 5
 
-ont tr069-server-config ${port} ${ontId}  profile-name ACS
+ont tr069-server-config ${port} ${ontId}  profile-name ACS-v2
 
-ont wan-config ${port} ${ontId} ip-index 2 profile-name ACS
+ont wan-config ${port} ${ontId} ip-index 2 profile-name ACS-v2
 
 
 quit
