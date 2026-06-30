@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function OpenAksesJinde() {
+export default function OpenAksesNCS() {
   const navigate = useNavigate();
 
   // Route guard
@@ -15,6 +15,7 @@ export default function OpenAksesJinde() {
     const saved = localStorage.getItem("cm-theme");
     if (saved === "light" || saved === "dark") setTheme(saved);
   }, []);
+
   const isSystemDark = () =>
     typeof window !== "undefined" &&
     window.matchMedia &&
@@ -22,19 +23,15 @@ export default function OpenAksesJinde() {
   const resolvedDark = theme === "dark" || (theme === "system" && isSystemDark());
 
   // Inputs
-  const [sn, setSn] = useState("");
-  const [frame, setFrame] = useState("");
-  const [slot, setSlot] = useState("");
-  const [port, setPort] = useState("");
-  const [ontId, setOntId] = useState("");
-  const [sid, setSid] = useState("");
-  const [nama, setNama] = useState("");
-  const DEFAULT_PPPOE_USERNAME = "";
-  const DEFAULT_PPPOE_PASSWORD = "";
-  const DUMMY_PPPOE_USERNAME = "JIN002";
-  const DUMMY_PPPOE_PASSWORD = "iconJIN002";
-  const [pppoeUsername, setPppoeUsername] = useState(DEFAULT_PPPOE_USERNAME);
-  const [pppoePassword, setPppoePassword] = useState(DEFAULT_PPPOE_PASSWORD);
+  const [sn, setSn] = useState("485754438F1A71B4");
+  const [frame, setFrame] = useState("0");
+  const [slot, setSlot] = useState("1");
+  const [port, setPort] = useState("12");
+  const [ontId, setOntId] = useState("7");
+  const [desc, setDesc] = useState("HABIB.ALI");
+  const [vlan, setVlan] = useState("2777");
+  const [pppoeUsername, setPppoeUsername] = useState("NSCFTT4272059");
+  const [pppoePassword, setPppoePassword] = useState("xc6k202j");
 
   // Validation
   const [errors, setErrors] = useState({});
@@ -45,8 +42,8 @@ export default function OpenAksesJinde() {
     if (!slot) e.slot = "Slot wajib diisi";
     if (!port) e.port = "Port wajib diisi";
     if (!ontId) e.ontId = "ONT ID wajib diisi";
-    if (!sid) e.sid = "SID wajib diisi";
-    if (!nama) e.nama = "Nama User wajib diisi";
+    if (!desc) e.desc = "Deskripsi wajib diisi";
+    if (!vlan) e.vlan = "VLAN wajib diisi";
     if (!pppoeUsername) e.pppoeUsername = "Username wajib diisi";
     if (!pppoePassword) e.pppoePassword = "Password wajib diisi";
     setErrors(e);
@@ -66,30 +63,16 @@ export default function OpenAksesJinde() {
     }
   }
 
-  function loadDummyData() {
-    setSn("48575443BC87B2B0");
+  function resetForm() {
+    setSn("485754438F1A71B4");
     setFrame("0");
     setSlot("1");
-    setPort("8");
-    setOntId("13");
-    setSid("JIN002");
-    setNama("Marsha");
-    setPppoeUsername(DUMMY_PPPOE_USERNAME);
-    setPppoePassword(DUMMY_PPPOE_PASSWORD);
-    setErrors({});
-    setOutput("");
-  }
-
-  function resetForm() {
-    setSn("");
-    setFrame("");
-    setSlot("");
-    setPort("");
-    setOntId("");
-    setSid("");
-    setNama("");
-    setPppoeUsername(DEFAULT_PPPOE_USERNAME);
-    setPppoePassword(DEFAULT_PPPOE_PASSWORD);
+    setPort("12");
+    setOntId("7");
+    setDesc("HABIB.ALI");
+    setVlan("2777");
+    setPppoeUsername("NSCFTT4272059");
+    setPppoePassword("xc6k202j");
     setErrors({});
     setOutput("");
   }
@@ -103,36 +86,18 @@ export default function OpenAksesJinde() {
     const FSP = `${frame}/${slot}`;
     const FSP_ID = `${frame}/${slot}/${port}`;
 
-    const tpl = `int gpon ${FSP}
-
-
-ont add ${port} ${ontId} sn-auth ${sn} omci ont-lineprofile-name OAJINDE.2796 ont-srvprofile-name OAJINDE.2796 desc ${sid}-${nama}
-
-
-ont ipconfig ${port} ${ontId} pppoe vlan 2796 priority 0 user-account username ${pppoeUsername} password ${pppoePassword}
-
-
+    const tpl = `config
+interface gpon ${FSP}
+ont add ${port} ${ontId} sn-auth ${sn} omci ont-lineprofile-name OANSC.${vlan} ont-srvprofile-name OANSC.${vlan} desc ${desc}
+ont ipconfig ${port} ${ontId} pppoe vlan ${vlan} priority 0 user-account username ${pppoeUsername} password ${pppoePassword}
 ont internet-config ${port} ${ontId} ip-index 0
-
-
-ont wan-config ${port} ${ontId} ip-index 0 profile-name JINDE
-
-
-ont policy-route-config ${port} ${ontId} profile-name JINDE
-
-
+ont wan-config ${port} ${ontId} ip-index 0 profile-name ICONNET.AUTOPROV
+ont policy-route-config ${port} ${ontId} profile-name ICONNET.AUTOPROV
 ont port route ${port} ${ontId} eth 1 enable
-
-
 ont port route ${port} ${ontId} eth 2 enable
-
-
 quit
-
-
-service-port vlan 2796 gpon ${FSP_ID} ont ${ontId} gemport 1 multi-service user-vlan 2796 tag-transform translate
-
-
+service-port vlan ${vlan} gpon ${FSP_ID} ont ${ontId} gemport 1 multi-service user-vlan ${vlan} tag-transform translate
+quit
 save`;
 
     setOutput(tpl);
@@ -143,7 +108,7 @@ save`;
       <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-4 sm:p-6">
         {/* Header */}
         <div className="mx-auto max-w-7xl flex items-center justify-between mb-6">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Config · Open Akses · JINDE</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Config · Open Akses · NCS</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} setTheme={setTheme} />
             <button
@@ -163,30 +128,23 @@ save`;
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Input Data</h2>
               <button
                 className="rounded-lg bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs"
-                onClick={loadDummyData}
+                onClick={resetForm}
               >
-                Data Dummy
+                Reset Ke Example
               </button>
             </div>
 
-            <Field label="SN ONT" value={sn} onChange={setSn} name="sn" error={errors.sn} placeholder="e.g. 48575443BC87B2B0" />
+            <Field label="SN ONT" value={sn} onChange={setSn} name="sn" error={errors.sn} placeholder="e.g. 485754438F1A71B4" />
             <div className="grid grid-cols-3 gap-2">
               <Field label="Frame" value={frame} onChange={setFrame} name="frame" error={errors.frame} placeholder="0" />
               <Field label="Slot" value={slot} onChange={setSlot} name="slot" error={errors.slot} placeholder="1" />
-              <Field label="Port" value={port} onChange={setPort} name="port" error={errors.port} placeholder="8" />
+              <Field label="Port" value={port} onChange={setPort} name="port" error={errors.port} placeholder="12" />
             </div>
-            <Field label="ONT ID" value={ontId} onChange={setOntId} name="ontId" error={errors.ontId} placeholder="13" />
-            <Field label="SID" value={sid} onChange={setSid} name="sid" error={errors.sid} placeholder="JIN002" />
+            <Field label="ONT ID" value={ontId} onChange={setOntId} name="ontId" error={errors.ontId} placeholder="7" />
+            <Field label="Deskripsi" value={desc} onChange={setDesc} name="desc" error={errors.desc} placeholder="HABIB.ALI" />
+            <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="2777" />
             <Field
-              label="Nama User"
-              value={nama}
-              onChange={(val) => setNama(val.replace(/\s+/g, "."))}
-              name="nama"
-              error={errors.nama}
-              placeholder="Marsha"
-            />
-            <Field
-              label="Username"
+              label="Username PPPoE"
               value={pppoeUsername}
               onChange={setPppoeUsername}
               name="pppoeUsername"
@@ -194,13 +152,12 @@ save`;
               placeholder="Masukkan Username PPPoE"
             />
             <Field
-              label="Password"
+              label="Password PPPoE"
               value={pppoePassword}
               onChange={setPppoePassword}
               name="pppoePassword"
               error={errors.pppoePassword}
               placeholder="Masukkan Password PPPoE"
-
             />
 
             <button
@@ -220,12 +177,12 @@ save`;
 
           {/* Card 2: Fixed Profile */}
           <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
-            <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Open Akses - JINDE</h2>
+            <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Open Akses - NCS</h2>
             <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
-              <p>Line Profile: <b>OAJINDE.2796</b></p>
-              <p>Service Profile: <b>OAJINDE.2796</b></p>
-              <p>VLAN: <b>2796</b></p>
-              <p>WAN/Policy Profile: <b>JINDE</b></p>
+              <p>Line Profile: <b>OANSC.2777</b></p>
+              <p>Service Profile: <b>OANSC.2777</b></p>
+              <p>VLAN: <b>2777</b></p>
+              <p>WAN/Policy Profile: <b>ICONTNET.AUTOPROV</b></p>
               <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">FSP ID mengikuti pola Huawei: Frame/Slot/Port.</p>
             </div>
           </section>

@@ -105,23 +105,33 @@ export default function OpenAksesMoratel() {
 
     const tpl = `int gpon ${FSP}
 
+
 ont add ${port} ${ontId} sn-auth ${sn} omci ont-lineprofile-name OAMORATEL.2700 ont-srvprofile-name OAMORATEL.2700 desc ${sid}-${nama}
+
 
 ont ipconfig ${port} ${ontId} pppoe vlan 2700 priority 0 user-account username ${pppoeUsername} password ${pppoePassword}
 
+
 ont internet-config ${port} ${ontId} ip-index 0
+
 
 ont wan-config ${port} ${ontId} ip-index 0 profile-name MORATEL
 
+
 ont policy-route-config ${port} ${ontId} profile-name MORATEL
+
 
 ont port route ${port} ${ontId} eth 1 enable
 
+
 ont port route ${port} ${ontId} eth 2 enable
+
 
 quit
 
+
 service-port vlan 2700 gpon ${FSP_ID} ont ${ontId} gemport 1 multi-service user-vlan 2700 tag-transform translate
+
 
 save`;
 

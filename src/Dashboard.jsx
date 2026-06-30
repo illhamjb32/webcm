@@ -157,7 +157,7 @@ export default function Dashboard() {
                   </button>
 
                   {openConfig && (
-                    <div className="absolute right-0 mt-2 w-64 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2">
+                    <div className="absolute right-0 mt-2 w-72 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2">
                       <Section title="Aktivasi">
                         {vendors.map(v => (
                           <DropdownLink
@@ -170,15 +170,20 @@ export default function Dashboard() {
                       </Section>
                       <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <Section title="Open Akses">
-                          <DropdownLink to="/dashboard/config/open-akses/jinde">
-                            JINDE
-                          </DropdownLink>
-                          <DropdownLink to="/dashboard/config/open-akses/moratel">
-                            MORATEL
-                          </DropdownLink>
-                          <DropdownLink to="/dashboard/config/open-akses/viberlink">
-                            Viberlink
-                          </DropdownLink>
+                          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 p-2 space-y-1">
+                            <DropdownLink to="/dashboard/config/open-akses/jinde">
+                              JINDE
+                            </DropdownLink>
+                            <DropdownLink to="/dashboard/config/open-akses/moratel">
+                              MORATEL
+                            </DropdownLink>
+                            <DropdownLink to="/dashboard/config/open-akses/ncs">
+                              NCS
+                            </DropdownLink>
+                            <DropdownLink to="/dashboard/config/open-akses/viberlink">
+                              Viberlink
+                            </DropdownLink>
+                          </div>
                         </Section>
                       </div>
                     </div>
@@ -246,29 +251,33 @@ export default function Dashboard() {
                 <li className="px-3 pt-2 text-xs font-semibold text-slate-500">
                   Config → Open Akses
                 </li>
-                <li>
-                  <NavLink
-                    to="/dashboard/config/open-akses/jinde"
-                    className="block px-3 py-2 rounded-xl"
-                  >
-                    JINDE
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/dashboard/config/open-akses/moratel"
-                    className="block px-3 py-2 rounded-xl"
-                  >
-                    MORATEL
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/dashboard/config/open-akses/viberlink"
-                    className="block px-3 py-2 rounded-xl"
-                  >
-                    Viberlink
-                  </NavLink>
+                <li className="px-2">
+                  <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 p-2 space-y-1">
+                    <NavLink
+                      to="/dashboard/config/open-akses/jinde"
+                      className="block px-3 py-2 rounded-xl"
+                    >
+                      JINDE
+                    </NavLink>
+                    <NavLink
+                      to="/dashboard/config/open-akses/moratel"
+                      className="block px-3 py-2 rounded-xl"
+                    >
+                      MORATEL
+                    </NavLink>
+                    <NavLink
+                      to="/dashboard/config/open-akses/ncs"
+                      className="block px-3 py-2 rounded-xl"
+                    >
+                      NCS
+                    </NavLink>
+                    <NavLink
+                      to="/dashboard/config/open-akses/viberlink"
+                      className="block px-3 py-2 rounded-xl"
+                    >
+                      Viberlink
+                    </NavLink>
+                  </div>
                 </li>
               </ul>
             </div>
@@ -292,7 +301,7 @@ export default function Dashboard() {
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
-                 <li>Perbaikan typo config fiberhome dan penambahan ACS BDCOM</li>
+                 <li>Penambahan config OA NCS</li>
               </ul>
             </Card>
           </div>
