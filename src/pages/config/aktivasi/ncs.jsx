@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function OpenAksesNCS() {
+export default function OpenAksesNSC() {
   const navigate = useNavigate();
 
   // Route guard
@@ -108,7 +108,7 @@ save`;
       <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-4 sm:p-6">
         {/* Header */}
         <div className="mx-auto max-w-7xl flex items-center justify-between mb-6">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Config · Open Akses · NCS</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Config · Open Akses · NSC</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} setTheme={setTheme} />
             <button
@@ -177,7 +177,7 @@ save`;
 
           {/* Card 2: Fixed Profile */}
           <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-sm">
-            <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Open Akses - NCS</h2>
+            <h2 className="text-sm font-semibold mb-3 text-slate-700 dark:text-slate-200">Open Akses - NSC</h2>
             <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
               <p>Line Profile: <b>OANSC.2777</b></p>
               <p>Service Profile: <b>OANSC.2777</b></p>

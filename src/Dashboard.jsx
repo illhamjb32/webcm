@@ -177,8 +177,8 @@ export default function Dashboard() {
                             <DropdownLink to="/dashboard/config/open-akses/moratel">
                               MORATEL
                             </DropdownLink>
-                            <DropdownLink to="/dashboard/config/open-akses/ncs">
-                              NCS
+                            <DropdownLink to="/dashboard/config/open-akses/nsc">
+                              NSC
                             </DropdownLink>
                             <DropdownLink to="/dashboard/config/open-akses/viberlink">
                               Viberlink
@@ -266,10 +266,10 @@ export default function Dashboard() {
                       MORATEL
                     </NavLink>
                     <NavLink
-                      to="/dashboard/config/open-akses/ncs"
+                      to="/dashboard/config/open-akses/nsc"
                       className="block px-3 py-2 rounded-xl"
                     >
-                      NCS
+                      NSC
                     </NavLink>
                     <NavLink
                       to="/dashboard/config/open-akses/viberlink"
@@ -301,7 +301,7 @@ export default function Dashboard() {
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
-                 <li>Penambahan config OA NCS</li>
+                 <li>Penambahan config OA NSC</li>
               </ul>
             </Card>
           </div>

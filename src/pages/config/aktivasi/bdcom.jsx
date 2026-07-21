@@ -262,8 +262,6 @@ description ${sid}-${nama}
 
 quit
 
-Config
-
 interface gpoN 0/${port}:${ontId}
 
 gpon onu wan 1 admin-status enable
@@ -285,8 +283,6 @@ gpon onu wan 1 auto-get-dns-address enable
 gpon onu wan 1 lan-dhcp enable
 
 quit
-
-Config
 
 interface gpoN 0/${port}:${ontId}
 
