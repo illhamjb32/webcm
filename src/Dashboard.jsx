@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -8,6 +8,10 @@ export default function Dashboard() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openConfig, setOpenConfig] = useState(false);
   const [openTools, setOpenTools] = useState(false);
+  const [openLinkKerja, setOpenLinkKerja] = useState(false);
+  const [openMigrasiACS, setOpenMigrasiACS] = useState(false);
+  const [openAktivasi, setOpenAktivasi] = useState(false);
+  const [openOpenAkses, setOpenOpenAkses] = useState(false);
 
   // ===== THEME =====
   const [theme, setTheme] = useState("system");
@@ -37,13 +41,16 @@ export default function Dashboard() {
   useEffect(() => {
     setOpenTools(false);
     setOpenConfig(false);
+    setOpenLinkKerja(false);
     setMobileOpen(false);
+    setOpenMigrasiACS(false);
+    setOpenAktivasi(false);
+    setOpenOpenAkses(false);
   }, [location.pathname]);
 
   const navItems = [
     { to: "/dashboard", label: "Home" },
     { to: "/dashboard/flow-kerja", label: "Flow Kerja" },
-    { to: "/dashboard/link-kerja", label: "Link Kerja" },
   ];
 
   const vendors = ["Huawei", "Raisecom", "BDCOM", "ZTE", "Fiberhome"];
@@ -116,6 +123,10 @@ export default function Dashboard() {
                     onClick={() => {
                       setOpenTools(v => !v);
                       setOpenConfig(false);
+                      setOpenLinkKerja(false);
+                      setOpenMigrasiACS(false);
+                      setOpenAktivasi(false);
+                      setOpenOpenAkses(false);
                     }}
                     className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                       location.pathname.startsWith("/dashboard/tools")
@@ -128,14 +139,84 @@ export default function Dashboard() {
 
                   {openTools && (
                     <div className="absolute right-0 mt-2 w-64 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2">
-                      <Section title="Migrasi ACS">
-                        <DropdownLink to="/dashboard/tools/migrasi-acs/raisecom">
-                          Raisecom
+                      <div className="relative">
+                        <button
+                          onClick={() => setOpenMigrasiACS(v => !v)}
+                          className="w-full text-left px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                        >
+                          <span>Migrasi ACS</span>
+                          <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{openMigrasiACS ? '▾' : '›'}</span>
+                        </button>
+                        {openMigrasiACS && (
+                          <div className="absolute left-full top-0 ml-2 w-48 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2 space-y-1">
+                            <DropdownLink to="/dashboard/tools/migrasi-acs/raisecom">
+                              Raisecom
+                            </DropdownLink>
+                            <DropdownLink to="/dashboard/tools/migrasi-acs/zte">
+                              ZTE
+                            </DropdownLink>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
+                        <DropdownLink to="/dashboard/tools/converter">
+                          Converter
                         </DropdownLink>
-                        <DropdownLink to="/dashboard/tools/migrasi-acs/zte">
-                          ZTE
-                        </DropdownLink>
-                      </Section>
+                        <a
+                          href="https://illhamjb32.github.io/bngvlans/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          VLAN Searcher
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </li>
+
+                {/* ===== LINK KERJA DROPDOWN ===== */}
+                <li className="relative">
+                  <button
+                    onClick={() => {
+                      setOpenLinkKerja(v => !v);
+                      setOpenTools(false);
+                      setOpenConfig(false);
+                      setOpenMigrasiACS(false);
+                      setOpenAktivasi(false);
+                      setOpenOpenAkses(false);
+                    }}
+                    className={`px-3 py-2 rounded-xl text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800`}
+                  >
+                    Link Kerja
+                  </button>
+
+                  {openLinkKerja && (
+                    <div className="absolute right-0 mt-2 w-64 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2 space-y-1">
+                      <a
+                        href="https://docs.google.com/spreadsheets/d/1N4LjS6Mju01PuhKEiH3EwJbh6HqiQ_lf4xBDyCfVuCs/edit?gid=1252432416#gid=1252432416"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        Jadwal Shifting
+                      </a>
+                      <a
+                        href="https://linktr.ee/data_OA_icon"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        Data Open Akses
+                      </a>
+                      <a
+                        href="https://acs.iconpln.co.id/system-dashboard"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        ACS
+                      </a>
                     </div>
                   )}
                 </li>
@@ -146,6 +227,10 @@ export default function Dashboard() {
                     onClick={() => {
                       setOpenConfig(v => !v);
                       setOpenTools(false);
+                      setOpenLinkKerja(false);
+                      setOpenMigrasiACS(false);
+                      setOpenAktivasi(false);
+                      setOpenOpenAkses(false);
                     }}
                     className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                       location.pathname.startsWith("/dashboard/config")
@@ -158,33 +243,59 @@ export default function Dashboard() {
 
                   {openConfig && (
                     <div className="absolute right-0 mt-2 w-72 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2">
-                      <Section title="Aktivasi">
-                        {vendors.map(v => (
-                          <DropdownLink
-                            key={v}
-                            to={`/dashboard/config/aktivasi/${v.toLowerCase()}`}
-                          >
-                            {v}
-                          </DropdownLink>
-                        ))}
-                      </Section>
-                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <Section title="Open Akses">
-                          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 p-2 space-y-1">
-                            <DropdownLink to="/dashboard/config/open-akses/jinde">
-                              JINDE
-                            </DropdownLink>
-                            <DropdownLink to="/dashboard/config/open-akses/moratel">
-                              MORATEL
-                            </DropdownLink>
-                            <DropdownLink to="/dashboard/config/open-akses/nsc">
-                              NSC
-                            </DropdownLink>
-                            <DropdownLink to="/dashboard/config/open-akses/viberlink">
-                              Viberlink
-                            </DropdownLink>
+                      <div className="relative">
+                        <button
+                          onClick={() => {
+                            setOpenAktivasi(v => !v);
+                            setOpenOpenAkses(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                        >
+                          <span>Aktivasi ICONNET</span>
+                          <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{openAktivasi ? '▾' : '›'}</span>
+                        </button>
+                        {openAktivasi && (
+                          <div className="absolute left-full top-0 ml-2 w-48 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2 space-y-1">
+                            {vendors.map(v => (
+                              <DropdownLink
+                                key={v}
+                                to={`/dashboard/config/aktivasi/${v.toLowerCase()}`}
+                              >
+                                {v}
+                              </DropdownLink>
+                            ))}
                           </div>
-                        </Section>
+                        )}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="relative">
+                          <button
+                            onClick={() => {
+                              setOpenOpenAkses(v => !v);
+                              setOpenAktivasi(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl transition hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                          >
+                            <span>Open Akses</span>
+                            <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{openOpenAkses ? '▾' : '›'}</span>
+                          </button>
+                          {openOpenAkses && (
+                            <div className="absolute left-full top-0 ml-2 w-48 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg p-2 space-y-1">
+                              <DropdownLink to="/dashboard/config/open-akses/jinde">
+                                JINDE
+                              </DropdownLink>
+                              <DropdownLink to="/dashboard/config/open-akses/moratel">
+                                MORATEL
+                              </DropdownLink>
+                              <DropdownLink to="/dashboard/config/open-akses/nsc">
+                                NSC
+                              </DropdownLink>
+                              <DropdownLink to="/dashboard/config/open-akses/viberlink">
+                                Viberlink
+                              </DropdownLink>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -301,7 +412,10 @@ export default function Dashboard() {
 
             <Card title="Catatan">
               <ul className="list-disc pl-5 text-sm">
-                 <li>Penambahan config OA NSC</li>
+                 <li>Penambahan Tools Converter (SN to Hex & MAC Address)</li>
+                 <li>Penambahan dropdown Link Kerja</li>
+                 <li>Penambahan VLAN Searcher di Tools</li>
+                 <li>Perbaikan struktur menu dropdown</li>
               </ul>
             </Card>
           </div>

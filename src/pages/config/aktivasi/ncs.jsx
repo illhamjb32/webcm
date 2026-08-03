@@ -22,16 +22,17 @@ export default function OpenAksesNSC() {
     window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolvedDark = theme === "dark" || (theme === "system" && isSystemDark());
 
-  // Inputs
-  const [sn, setSn] = useState("485754438F1A71B4");
-  const [frame, setFrame] = useState("0");
-  const [slot, setSlot] = useState("1");
-  const [port, setPort] = useState("12");
-  const [ontId, setOntId] = useState("7");
-  const [desc, setDesc] = useState("HABIB.ALI");
-  const [vlan, setVlan] = useState("2777");
-  const [pppoeUsername, setPppoeUsername] = useState("NSCFTT4272059");
-  const [pppoePassword, setPppoePassword] = useState("xc6k202j");
+  // Inputs (default: empty, placeholder only)
+  const [sn, setSn] = useState("");
+  const [frame, setFrame] = useState("");
+  const [slot, setSlot] = useState("");
+  const [port, setPort] = useState("");
+  const [ontId, setOntId] = useState("");
+  const [custId, setCustId] = useState("");
+  const [namaUser, setNamaUser] = useState("");
+  const [vlan, setVlan] = useState("");
+  const [pppoeUsername, setPppoeUsername] = useState("");
+  const [pppoePassword, setPppoePassword] = useState("");
 
   // Validation
   const [errors, setErrors] = useState({});
@@ -42,7 +43,8 @@ export default function OpenAksesNSC() {
     if (!slot) e.slot = "Slot wajib diisi";
     if (!port) e.port = "Port wajib diisi";
     if (!ontId) e.ontId = "ONT ID wajib diisi";
-    if (!desc) e.desc = "Deskripsi wajib diisi";
+    if (!custId) e.custId = "CUST ID wajib diisi";
+    if (!namaUser) e.namaUser = "NAMA User wajib diisi";
     if (!vlan) e.vlan = "VLAN wajib diisi";
     if (!pppoeUsername) e.pppoeUsername = "Username wajib diisi";
     if (!pppoePassword) e.pppoePassword = "Password wajib diisi";
@@ -64,17 +66,31 @@ export default function OpenAksesNSC() {
   }
 
   function resetForm() {
+    setSn("");
+    setFrame("");
+    setSlot("");
+    setPort("");
+    setOntId("");
+    setCustId("");
+    setNamaUser("");
+    setVlan("");
+    setPppoeUsername("");
+    setPppoePassword("");
+    setErrors({});
+    setOutput("");
+  }
+
+  function fillDummy() {
     setSn("485754438F1A71B4");
     setFrame("0");
     setSlot("1");
     setPort("12");
     setOntId("7");
-    setDesc("HABIB.ALI");
+    setCustId("NSCFTT4272059");
+    setNamaUser("HABIB.ALI");
     setVlan("2777");
     setPppoeUsername("NSCFTT4272059");
     setPppoePassword("xc6k202j");
-    setErrors({});
-    setOutput("");
   }
 
   function showConfig() {
@@ -87,17 +103,29 @@ export default function OpenAksesNSC() {
     const FSP_ID = `${frame}/${slot}/${port}`;
 
     const tpl = `config
+
 interface gpon ${FSP}
-ont add ${port} ${ontId} sn-auth ${sn} omci ont-lineprofile-name OANSC.${vlan} ont-srvprofile-name OANSC.${vlan} desc ${desc}
+
+ont add ${port} ${ontId} sn-auth ${sn} omci ont-lineprofile-name OANSC.${vlan} ont-srvprofile-name OANSC.${vlan} desc "${custId} ${namaUser}"
+
 ont ipconfig ${port} ${ontId} pppoe vlan ${vlan} priority 0 user-account username ${pppoeUsername} password ${pppoePassword}
+
 ont internet-config ${port} ${ontId} ip-index 0
+
 ont wan-config ${port} ${ontId} ip-index 0 profile-name ICONNET.AUTOPROV
+
 ont policy-route-config ${port} ${ontId} profile-name ICONNET.AUTOPROV
+
 ont port route ${port} ${ontId} eth 1 enable
+
 ont port route ${port} ${ontId} eth 2 enable
+
 quit
+
 service-port vlan ${vlan} gpon ${FSP_ID} ont ${ontId} gemport 1 multi-service user-vlan ${vlan} tag-transform translate
+
 quit
+
 save`;
 
     setOutput(tpl);
@@ -128,9 +156,9 @@ save`;
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Input Data</h2>
               <button
                 className="rounded-lg bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs"
-                onClick={resetForm}
+                onClick={fillDummy}
               >
-                Reset Ke Example
+                Dummy
               </button>
             </div>
 
@@ -141,7 +169,8 @@ save`;
               <Field label="Port" value={port} onChange={setPort} name="port" error={errors.port} placeholder="12" />
             </div>
             <Field label="ONT ID" value={ontId} onChange={setOntId} name="ontId" error={errors.ontId} placeholder="7" />
-            <Field label="Deskripsi" value={desc} onChange={setDesc} name="desc" error={errors.desc} placeholder="HABIB.ALI" />
+            <Field label="CUST ID" value={custId} onChange={setCustId} name="custId" error={errors.custId} placeholder="NSCFTT4272059" />
+            <Field label="NAMA USER" value={namaUser} onChange={setNamaUser} name="namaUser" error={errors.namaUser} placeholder="HABIB.ALI" />
             <Field label="VLAN" value={vlan} onChange={setVlan} name="vlan" error={errors.vlan} placeholder="2777" />
             <Field
               label="Username PPPoE"
@@ -171,7 +200,7 @@ save`;
               onClick={resetForm}
               type="button"
             >
-              Reset Form
+              Reset
             </button>
           </section>
 

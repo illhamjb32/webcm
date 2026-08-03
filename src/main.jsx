@@ -20,6 +20,8 @@ import OpenAksesMoratel from "./pages/config/aktivasi/moratel";
 import OpenAksesNSC from "./pages/config/aktivasi/ncs";
 import RaisecomMigrasiACS from "./pages/tools/raisecom"
 import ZteMigrasiACS from "./pages/tools/ZTE";
+import Converter from "./pages/tools/Converter";
+import NotFound from "./pages/NotFound";
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -45,6 +47,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/dashboard/config/open-akses/viberlink" element={<ViberlinkAktivasi />} />
         <Route path="/dashboard/tools/migrasi-acs/raisecom" element={<RaisecomMigrasiACS />} />
         <Route path="/dashboard/tools/migrasi-acs/zte" element={<ZteMigrasiACS />} />
+        <Route path="/dashboard/tools/converter" element={<Converter />} />
+
+        {/* 404 Not Found */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </HashRouter>
   </React.StrictMode>
